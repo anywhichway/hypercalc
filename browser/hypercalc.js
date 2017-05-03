@@ -1,3 +1,573 @@
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function() {
+	"use strict"
+	const math = require("mathjs/dist/math.min.js");
+	let CURRENTCELL,
+		DECLARATIONS;
+
+	function intersection() {
+		const args = [].slice.call(arguments).sort((a,b) => a.length - b.length),
+	    	intersection = new Set(args[0]);
+	    for(let elem of intersection) {
+	    	for(let i=1;i<args.length;i++) {
+		    	if(!args[i].includes(elem)) {
+		    		intersection.delete(elem);
+		    		break;
+		    	}
+		    }
+	    }
+	    return [...intersection];
+	}
+	
+	function traverse(matrix,callback) {
+		for(let i=0;i<matrix.length;i++) {
+			const item = matrix[i];
+			if(Array.isArray(item)) traverse(item,callback);
+			else callback(item,i,matrix);
+		}
+	}
+	
+	function replaceForA() {
+		return {
+			boolean: {
+				true: 1,
+				false: 0
+			},
+			string: 0,
+			undefined: 0,
+			null: 0,
+			Array: 0
+		}
+	}
+	
+	function coerce(value,options) {
+		if(options) {
+			const type = math.typeof(value);
+			if(options.replace) {
+				if(options.replace[type] && typeof(options.replace[type])==="object" && typeof(options.replace[type][value])!=="undefined") return options.replace[type][value];
+				if(typeof(options.replace[type])!=="undefined") return options.replace[type];
+			}
+			if(typeof(options.NA)!=="undefined" && type==="undefined") return options.NA;
+			if(typeof(options.NaN)!=="undefined" && type!=="number") return options.NaN;
+		}
+		return value;
+	}
+	
+	function match(pattern,coordinate2) {
+		const c1 = pattern.split("."), c2 = coordinate2.split(".");
+		return c1.length===c2.length && c1.every((key,i) => { 
+			const parts = key.split(":");
+			if(parts.length===1) return parts[0]==="*" || parts[0]===c2[i];
+			if(parts[0]==="*") return parts[1]==="*" || c2[i]<=parts[1];
+			if(c2[i]>=parts[0]) return parts[1]==="*" || c2[i]<=parts[1];
+			return false;
+		});
+	}
+	
+	const VARGS = [];
+	function getargs(args) {
+		const last = args[args.length-1],
+			options = (last && typeof(last)==="object" && !Array.isArray(last) ? last : null);
+		let values = [];
+		!options || (args = args.slice(0,args.length-1));
+		const result = [];
+		for(let i=0;i<args.length;i++) {
+			if(args[i]===VARGS) {
+				const varg = VARGS.shift();
+				if(Array.isArray(varg)) {
+					for(let arg of varg) result.push(arg)
+				} else {
+					results.push(varg);
+				}
+			}
+			else result.push(args[i]);
+		}
+		VARGS.splice(0,VARGS.length); // do we need this?
+		return [result,options];
+	}
+	
+	const FUNCTIONS = {};
+	const declarations = () => {
+		const keys = Object.keys(FUNCTIONS);
+		let str = "const ";
+		keys.forEach((key,i) => {
+			str += key + "=functions['"+key+"']";
+			if(i<keys.length-1) str += ",";
+		});
+		str += ";"
+		return str;
+	}
+	
+	FUNCTIONS.$ = function(coordinates,options) {
+		const values = [],
+			cells = FUNCTIONS.cells(coordinates);
+		for(let cell of cells) (options && options.if ? !options.if(cell.value) || values.push(cell.value) : values.push(cell.value));
+		return values;
+	}
+	FUNCTIONS.varg = function(arg) {
+		VARGS.push(arg);
+		return VARGS;
+	}
+	FUNCTIONS.values = FUNCTIONS.$a = function(coordinates,options) {
+		const values = [],
+			cells = FUNCTIONS.cells(coordinates);
+		options = Object.assign({replace:replaceForA()},(options || {}));
+		for(let cell of cells) (options && options.if ? !options.if(cell.value) || values.push(coerce(cell.value,options)) : values.push(coerce(cell.value,options)));
+		return values;
+	}
+	FUNCTIONS.cells = function(pattern) {
+		if(CURRENTCELL) {
+			let observers = Cell.observers[pattern];
+			if(!observers) {
+				observers = {};
+				Cell.observers[pattern] = observers;
+				//Cell.index(pattern,Cell.observerIndex); // enable once indexing and find enhanced to support ranges
+			}
+			observers[CURRENTCELL.coordinates] = true;
+		}
+		return Cell.find(pattern,Cell.cellIndex);
+	}
+	FUNCTIONS.average = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		v = v.filter(item => typeof(item)==="number");
+		if(v.length===0) return 0;
+		return v.reduce((accumulator,current) => accumulator + current,0) / v.length;
+	}
+	FUNCTIONS.averagea = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return 0;
+		options = Object.assign({replace:replaceForA()},(options || {}));
+		return v.reduce((accumulator,current) => accumulator + coerce(current,options),0) / v.length;
+	}
+	FUNCTIONS.count = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		v = v.filter(item => typeof(item)==="number");
+		return v.length;
+	}
+	FUNCTIONS.counta = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		v = v.filter(item => item!==null && typeof(item)!=="undefined");
+		return v.length;
+	}
+	FUNCTIONS.extend = function() {
+		const parts = CURRENTCELL.coordinates.split("."),
+			startcol = parseInt(parts[1]),
+			startrow = parseInt(parts[2]);
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		for(let row=0;row<v[0].length;row++) {
+			for(let col=0;col<v[0][row].length;col++) {
+				if(row===0 && col===0) continue;
+				Cell(parts[0]+"."+(col+startcol)+"."+(row+startrow),v[0][row][col]); // null,CURRENTCELL.sheet
+			}
+		}
+		return v[0][0];
+	}
+	FUNCTIONS.format = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		return math.format(...v,options);
+	}
+	FUNCTIONS.intersection = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(v.length===0) return [];
+		const result = intersection(...v);
+		if(options && options.if) return result.filter(options.if);
+		return result;
+	}
+	FUNCTIONS.max = function()  { // pattern,options or v1,v2,v3...options
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return -Infinity;
+		if(Array.isArray(v[0])) return math.max(...v);
+		return v.reduce((accumulator,current) => accumulator > current ? accumulator : current,-Infinity);
+	}
+	FUNCTIONS.maxa = function()  {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return -Infinity;
+		options = Object.assign({replace:replaceForA()},(options || {}));
+		traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
+		if(Array.isArray(v[0])) return math.max(...v);
+		return v.reduce((accumulator,current) => accumulator > current ? accumulator : current,-Infinity);
+	}
+	FUNCTIONS.median = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		return math.median(...v);
+	}
+	FUNCTIONS.mode = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		return math.mode(...v);
+	}
+	FUNCTIONS.min = function()  { // pattern,options or v1,v2,v3...options
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return Infinity;
+		if(Array.isArray(v[0])) return math.min(...v);
+		return v.reduce((accumulator,current) => accumulator < current ? accumulator : current,Infinity);
+	}
+	FUNCTIONS.mina = function()  {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return Infinity;
+		options = Object.assign({replace:replaceForA()},(options || {}));
+		traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
+		if(Array.isArray(v[0])) return math.min(...v);
+		return v.reduce((accumulator,current) => accumulator < current ? accumulator : current,Infinity);
+	}
+	FUNCTIONS.product = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
+		if(v.length===0) return 0;
+		if(Array.isArray(v[0])) return math.multiply(...v);
+		return v.reduce((accumulator,current) => accumulator * (typeof(current)==="number" ? current : 1),1);
+	}
+	FUNCTIONS.producta = function()  {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return 0;
+		options = Object.assign({
+			boolean: {
+				true: 1,
+				false: 0
+			},
+			string: 1,
+			undefined: 1,
+			null: 1,
+			Array: 1
+		},(options || {}));
+		traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
+		if(Array.isArray(v[0])) return math.multiply(...v);
+		return v.reduce((accumulator,current) => accumulator * (typeof(current)==="number" ? current : 1),1);
+	}
+	FUNCTIONS.dotProduct = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		return math.dotMultiply(...v);
+	}
+	FUNCTIONS.quotient = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
+		if(v.length===0) return 0;
+		return math.divide(...v);
+	}
+	FUNCTIONS.quotienta = function()  {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		options = Object.assign({replace: { boolean: 1, string: 1, undefined: 1 }},(options || {}));
+		if(options.if) v = v.filter(options.if);
+		if(v.length===0) return -Infinity;
+		return v.reduce((accumulator,current) => accumulator / coerce(current,options),1);
+	}
+	FUNCTIONS.dotQuotient = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		return math.dotDivide(...v);
+	}
+	FUNCTIONS.sum = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		if(Array.isArray(v[0])) return math.add(...v);
+		return v.reduce((accumulator,current) => accumulator + (typeof(current)==="number" ? current : 0),0);
+	}
+	FUNCTIONS.suma = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		options = Object.assign({replace:replaceForA()},(options || {}));
+		if(options && options.if) v = v.filter(options.if);
+		return v.reduce((accumulator,current) => accumulator + coerce(current,options),0);
+	}
+	FUNCTIONS.type = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		return math.typeof(...v);
+	}
+	FUNCTIONS.variance = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		v = v.filter(item => typeof(item)==="number");
+		if(v.length===0) return 0;
+		return math.var(...v);
+	}
+	for(let key in math) {
+		if(!FUNCTIONS[key] && !["chain","clone","config","compile","createUnit","false","forEach","format","index","import","json","matrix","print","help","map","null","parse","parser","range","sparse","true","typed","typeof","var"].includes(key)) {
+			FUNCTIONS[key] = function() {
+				let v, options;
+				[v,options] = getargs([...arguments]);
+				if(options && options.if) v = v.filter(options.if);
+				return math[key](...v);
+			}
+		}
+	}
+	
+	DECLARATIONS = declarations();
+
+	function Cell(coordinates,value,options,space) {
+		const me = this,
+			isnew = this && this instanceof Cell,
+			cell = Cell.cells[coordinates];
+		// return Cell if found and not creating new one
+		if(cell && !isnew) {
+			if(arguments.length===1) return cell;
+			cell.value = value;
+			!options || Object.assign(this.options,options);
+			return cell;
+		}
+		// create a new Cell
+		if(!isnew) {
+			if(typeof(value)==="undefined" && (!space || space.options.sparse)) return; // no point in creating cell
+			return new Cell(coordinates,value,options,space);
+		}
+		!space || (space.cells[coordinates] = true);
+		this.coordinates = coordinates;
+		this.options = {};
+		this.computed = null;
+		Object.assign(this.options,options);
+		Object.defineProperty(this,"references",{enumerable:false, configurable:true, writable: true, value: {}});
+		this.data = value;
+		Object.defineProperty(this,"calculating",{writable:true});
+		Object.defineProperty(this,"value",{ 
+			enumerable: false,
+			configurable: true,
+			get: function() {
+				return this.valueOf();
+			},
+			set: function(value) {
+				this.data = value;
+				this.compile().calc();
+				return true;
+			}
+		});
+		Cell.cells[coordinates] = this;
+		Cell.index(coordinates,Cell.cellIndex);
+		this.compile().calc();
+	}
+	Cell.prototype.addReferences = function() { 
+		for(let i=0;i<arguments.length;i++) arguments[i]===this || (this.references[arguments[i].coordinates] = true);
+	}
+	Cell.prototype.deleteReferences = function() { 
+		for(let i=0;i<arguments.length;i++) delete this.references[arguments[i].coordinates];
+	}
+	Cell.prototype.clearReferences = function() {
+		this.references = {};
+	}
+	Cell.prototype.compile = function() {
+		delete this.compiled;
+		if(typeof(this.data)==="string" && this.data.indexOf("=")===0) {
+			this.compiled = new Function("functions","return function() { " + DECLARATIONS + "return " + this.data.substring(1) + "; }")(FUNCTIONS);
+		}
+		for(let pattern in Cell.observers) {
+			const observers = [];
+			for(let coordinates in Cell.observers[pattern]) observers.push(Cell.cells[coordinates]);
+			if(match(pattern,this.coordinates)) this.addReferences(...observers);
+		}
+		return this;
+	}
+	Cell.prototype.calc = function(cascade=true) {
+		const me = this;
+		function calc() {
+			if(me.compiled) {
+				const current = CURRENTCELL;
+				CURRENTCELL = me;
+				me.computed = me.compiled();
+				CURRENTCELL = current;
+			}
+			!me.options.oncalculated || me.options.oncalculated(me)
+			me.calculating = null;
+		}
+		me.calculating || (me.calculating = setTimeout(calc));
+		if(cascade) {
+			for(let coordinates in me.references) Cell.cells[coordinates].calc();
+		}
+	}
+	Cell.prototype.valueOf = function() {
+		!CURRENTCELL || this.addReferences(CURRENTCELL);
+		return (this.compiled ? this.computed : this.data);
+	}
+	Cell.find = function(pattern,index) {
+		function find(parts,node,position,results) {
+			if(node) {
+				if(position===parts.length) {
+					const cell = Cell.cells[node.coordinates];
+					!cell || results.push(cell);
+					return;
+				}
+				node = node.nodes;
+				const part = parts[position],
+					rangetype = (part.includes(":") ? ":" : (part.includes("|") ? "|" : null));
+				if(!rangetype) {
+					if(part==="*") {
+						const keys = Object.keys(node),
+							next = position + 1;
+						for(let key of keys) find(parts,node[key],next,results);
+					} else {
+						node = node[part];
+						find(parts,node,++position,results);
+					}
+				} else {
+					const range = part.split(rangetype);
+					let isnum = false;
+					if(rangetype===":") {
+						for(let i=0;i<range.length;i++) {
+							if(parseInt(range[i])==range[i]) {
+								range[i] = parseInt(range[i]);
+								isnum = true;
+							}
+						}
+					}
+					const keys = Object.keys(node),
+						next = position + 1;
+					for(let key of keys) {
+						if(rangetype===":") {
+							key = (isnum && parseInt(key)==key ? parseInt(key) : key);
+							if(range[0]==="*" || key>=range[0]) {
+								if(key<=range[1]) find(parts,node[key],next,results);
+							}
+						} else if(range.some(item => item==key)) {
+							find(parts,node[key],next,results);
+						}
+					}
+				}
+			}	
+		}
+		const results = [];
+		find(pattern.split("."),index,0,results);
+		return results;
+	}
+	Cell.index = function(coordinates,index) { // need to enhance to support compiling ranges
+		const parts = coordinates.split(".");
+		let node = index.nodes; 
+		for(let i=0;i<parts.length;i++) {
+			node[parts[i]] || (node[parts[i]] = {nodes:{}});
+			if(i===parts.length-1) node[parts[i]].coordinates = coordinates;
+			else node = node[parts[i]].nodes;
+		}
+	}
+	Cell.cells = {};
+	Cell.observers = {};
+	Cell.cellIndex = {nodes:{}};
+	Cell.observerIndex = {nodes:{}};
+	
+	class Row {
+		constructor(sheet,id,data) {
+			this.sheet = sheet;
+			id || (id = sheet.rows.length+1);
+			sheet.rows.push(id);
+			let cols = 0;
+			if(sheet.options.columns) {
+				for(let property in sheet.options.columns) Cell(sheet.name+"."+property+"."+id,data[property],sheet.options.columns[property],sheet);
+			} else if(Array.isArray(data)) {
+				for(let i=0;i<data.length;i++,cols++) Cell(sheet.name+"."+(i+1)+"."+id,data[i],{},sheet);
+			} else {
+				const keys = Object.keys(data);
+				for(let i=0;i<data.length;i++,cols++) Cell(sheet.name+"."+(i+1)+"."+id,data[keys[i]],{},sheet);
+			}
+			if(sheet.options.columnCount && cols < sheet.options.columnCount) {
+				while(cols++<sheet.options.columnCount) Cell(sheet.name+"."+cols+"."+id,null,{},sheet);
+			}
+		}
+		cells() {
+			// return a non-sparse array of cells for rendering
+		}
+	}
+
+	function match(pattern,coordinate2) {
+		const c1 = pattern.split("."), c2 = coordinate2.split(".");
+		return c1.length===c2.length && c1.every((key,i) => { 
+			const parts = key.split(":");
+			if(parts.length===1) return parts[0]==="*" || parts[0]===c2[i];
+			if(parts[0]==="*") return parts[1]==="*" || c2[i]<=parts[1];
+			if(c2[i]>=parts[0]) return parts[1]==="*" || c2[i]<=parts[1];
+			return false;
+		});
+	}
+	
+	function Hypercalc(options={}) {
+		const me = this;
+		me.options = Object.assign({},options);
+		me.functions = new Proxy(FUNCTIONS,{
+			set: function(target,property,value) {
+				if(typeof(value)!=="function") throw new Error("Hypercalc custom function must be a function: ", value);
+				target[property] = value;
+				DECLARATIONS = declarations();
+				return true;
+			}
+		});
+		this.Sheet = class Sheet {
+			constructor(name,options={sparse:me.options.sparse}) {
+				let sheet = me.sheets[name];
+				if(sheet || !this) return sheet;
+				this.name = name;
+				this.options = {};
+				Object.assign(this.options,options);
+				this.rows = [];
+				this.cells = {};
+				me.sheets[name] = this;
+			}
+			createRow(id,data) {
+				return new Row(this,id,data);
+			}
+			import(array,options) { // options should just modify options for the sheet
+				for(let i=0;i<array.length;i++) this.createRow(i+1,array[i]);
+			}
+		}
+		me.sheets = {};
+		this.Space = class Space {
+			constructor(name,options={sparse:me.options.sparse}) {
+				let space = me.spaces[name];
+				if(space || !this) return space;
+				this.name = name;
+				this.options = {};
+				Object.assign(this.options,options);
+				this.cells = {};
+				me.spaces[name] = this;
+			}
+			createVector(vector,data) {
+				let coordinates = this.name+".";
+				Object.keys(this.options.dimensions).forEach((key,i,dimensions) => {
+					if(!["number","boolean","string"].includes(typeof(vector[key]))) throw new Error("Incompatible vector " + this.name);
+					coordinates += (vector[key] + (i<dimensions.length-1 ? "." : ""));
+				});
+				Cell(coordinates,data,this.options.contains,this);
+			}
+		}
+		me.spaces = {};
+	}
+	Hypercalc.prototype.Cell = Cell;
+	Hypercalc.getArgs = getargs;
+	
+	module.exports = Hypercalc;
+	if(typeof(window)!=="undefined") window.Hypercalc = Hypercalc;
+	
+}).call(this);
+},{"mathjs/dist/math.min.js":2}],2:[function(require,module,exports){
 /**
  * math.js
  * https://github.com/josdejong/mathjs
@@ -51,4 +621,5 @@ var e=this,t=e.constructor;return f(new t(e),e.e+1,t.rounding)},qe.sine=qe.sin=f
  * Dual licensed under the MIT or GPL Version 2 licenses.
  **/
 !function(r){"use strict";function a(e){var t=function(){var t=Error.apply(this,arguments);t.name=this.name=e,this.stack=t.stack,this.message=t.message},r=function(){};return r.prototype=Error.prototype,t.prototype=new r,t}function o(e,t){return isNaN(e=parseInt(e,10))&&s(),e*t}function s(){throw new p}function u(e,t){return this instanceof u?(h(e,t),e=u.REDUCE?v(f.d,f.n):1,this.s=f.s,this.n=f.n/e,void(this.d=f.d/e)):new u(e,t)}var c=2e3,f={s:1,n:0,d:1},l=u.DivisionByZero=a("DivisionByZero"),p=u.InvalidParameter=a("InvalidParameter"),h=function(e,t){var r,n=0,i=1,a=1,u=0,c=0,p=0,h=1,m=1,d=0,g=1,v=1,y=1,x=1e7;if(void 0===e||null===e);else if(void 0!==t)n=e,i=t,a=n*i;else switch(typeof e){case"object":"d"in e&&"n"in e?(n=e.n,i=e.d,"s"in e&&(n*=e.s)):0 in e?(n=e[0],1 in e&&(i=e[1])):s(),a=n*i;break;case"number":if(e<0&&(a=e,e=-e),e%1===0)n=e;else if(e>0){for(e>=1&&(m=Math.pow(10,Math.floor(1+Math.log(e)/Math.LN10)),e/=m);g<=x&&y<=x;){if(r=(d+v)/(g+y),e===r){g+y<=x?(n=d+v,i=g+y):y>g?(n=v,i=y):(n=d,i=g);break}e>r?(d+=v,g+=y):(v+=d,y+=g),g>x?(n=v,i=y):(n=d,i=g)}n*=m}else(isNaN(e)||isNaN(t))&&(i=n=NaN);break;case"string":if(g=e.match(/\d+|./g),"-"===g[d]?(a=-1,d++):"+"===g[d]&&d++,g.length===d+1?c=o(g[d++],a):"."===g[d+1]||"."===g[d]?("."!==g[d]&&(u=o(g[d++],a)),d++,(d+1===g.length||"("===g[d+1]&&")"===g[d+3]||"'"===g[d+1]&&"'"===g[d+3])&&(c=o(g[d],a),h=Math.pow(10,g[d].length),d++),("("===g[d]&&")"===g[d+2]||"'"===g[d]&&"'"===g[d+2])&&(p=o(g[d+1],a),m=Math.pow(10,g[d+1].length)-1,d+=3)):"/"===g[d+1]||":"===g[d+1]?(c=o(g[d],a),h=o(g[d+2],1),d+=3):"/"===g[d+3]&&" "===g[d+1]&&(u=o(g[d],a),c=o(g[d+2],a),h=o(g[d+4],1),d+=5),g.length<=d){i=h*m,a=n=p+i*u+m*c;break}default:s()}if(0===i)throw new l;f.s=a<0?-1:1,f.n=Math.abs(n),f.d=Math.abs(i)},m=function(e,t,r){for(var n=1;t>0;e=e*e%r,t>>=1)1&t&&(n=n*e%r);return n},d=function(e,t){for(;t%2===0;t/=2);for(;t%5===0;t/=5);if(1===t)return 0;for(var r=10%t,n=1;1!==r;n++)if(r=10*r%t,n>c)return 0;return n},g=function(e,t,r){for(var n=1,i=m(10,r,t),a=0;a<300;a++){if(n===i)return a;n=10*n%t,i=10*i%t}return 0},v=function(e,t){if(!e)return t;if(!t)return e;for(;;){if(e%=t,!e)return t;if(t%=e,!t)return e}};u.REDUCE=1,u.prototype={s:1,n:0,d:1,abs:function(){return new u(this.n,this.d)},neg:function(){return new u(-this.s*this.n,this.d)},add:function(e,t){return h(e,t),new u(this.s*this.n*f.d+f.s*this.d*f.n,this.d*f.d)},sub:function(e,t){return h(e,t),new u(this.s*this.n*f.d-f.s*this.d*f.n,this.d*f.d)},mul:function(e,t){return h(e,t),new u(this.s*f.s*this.n*f.n,this.d*f.d)},div:function(e,t){return h(e,t),new u(this.s*f.s*this.n*f.d,this.d*f.n)},clone:function(){return new u(this)},mod:function(e,t){return isNaN(this.n)||isNaN(this.d)?new u(NaN):void 0===e?new u(this.s*this.n%this.d,1):(h(e,t),0===f.n&&0===this.d&&u(0,0),new u(this.s*f.d*this.n%(f.n*this.d),f.d*this.d))},gcd:function(e,t){return h(e,t),new u(v(f.n,this.n),f.d*this.d/v(f.d,this.d))},lcm:function(e,t){return h(e,t),0===f.n&&0===this.n?new u:new u(f.n*this.n/v(f.n,this.n),v(f.d,this.d))},ceil:function(e){return e=Math.pow(10,e||0),isNaN(this.n)||isNaN(this.d)?new u(NaN):new u(Math.ceil(e*this.s*this.n/this.d),e)},floor:function(e){return e=Math.pow(10,e||0),isNaN(this.n)||isNaN(this.d)?new u(NaN):new u(Math.floor(e*this.s*this.n/this.d),e)},round:function(e){return e=Math.pow(10,e||0),isNaN(this.n)||isNaN(this.d)?new u(NaN):new u(Math.round(e*this.s*this.n/this.d),e)},inverse:function(){return new u(this.s*this.d,this.n)},pow:function(e){return e<0?new u(Math.pow(this.s*this.d,-e),Math.pow(this.n,-e)):new u(Math.pow(this.s*this.n,e),Math.pow(this.d,e))},equals:function(e,t){return h(e,t),this.s*this.n*f.d===f.s*f.n*this.d},compare:function(e,t){h(e,t);var r=this.s*this.n*f.d-f.s*f.n*this.d;return(0<r)-(r<0)},divisible:function(e,t){return h(e,t),!(!(f.n*this.d)||this.n*f.d%(f.n*this.d))},valueOf:function(){return this.s*this.n/this.d},toFraction:function(e){var t,r="",n=this.n,i=this.d;return this.s<0&&(r+="-"),1===i?r+=n:(e&&(t=Math.floor(n/i))>0&&(r+=t,r+=" ",n%=i),r+=n,r+="/",r+=i),r},toLatex:function(e){var t,r="",n=this.n,i=this.d;return this.s<0&&(r+="-"),1===i?r+=n:(e&&(t=Math.floor(n/i))>0&&(r+=t,n%=i),r+="\\frac{",r+=n,r+="}{",r+=i,r+="}"),r},toContinued:function(){var e,t=this.n,r=this.d,n=[];do n.push(Math.floor(t/r)),e=t%r,t=r,r=e;while(1!==t);return n},toString:function(){var e,t=this.n,r=this.d;if(isNaN(t)||isNaN(r))return"NaN";u.REDUCE||(e=v(t,r),t/=e,r/=e);for(var n=String(t).split(""),i=0,a=[~this.s?"":"-","",""],o="",s=d(t,r),c=g(t,r,s),f=-1,l=1,p=15+s+c+n.length,h=0;h<p;h++,i*=10){if(h<n.length?i+=Number(n[h]):(l=2,f++),s>0)if(f===c)a[l]+=o+"(",o="";else if(f===s+c){a[l]+=o+")";break}i>=r?(a[l]+=o+(i/r|0),o="",i%=r):l>1?o+="0":a[l]&&(a[l]+="0")}return a[0]+=a[1]||"0",a[2]?a[0]+"."+a[2]:a[0]}},n=[],i=function(){return u}.apply(t,n),!(void 0!==i&&(e.exports=i))}(this)},function(e,t,r){"use strict";(function(t){function r(e){var t,r=e.length,n=this,i=0,a=n.i=n.j=0,o=n.S=[];for(r||(e=[r++]);i<s;)o[i]=i++;for(i=0;i<s;i++)o[i]=o[a=d&a+e[i%r]+(t=o[i])],o[a]=t;(n.g=function(e){for(var t,r=0,i=n.i,a=n.j,o=n.S;e--;)t=o[i=d&i+1],r=r*s+o[d&(o[i]=o[a=d&a+t])+(o[a]=t)];return n.i=i,n.j=a,r})(s)}function n(e,t){var r,i=[],a=(typeof e)[0];if(t&&"o"==a)for(r in e)try{i.push(n(e[r],t-1))}catch(e){}return i.length?i:"s"==a?e:e+"\0"}function i(e,t){for(var r,n=e+"",i=0;i<n.length;)t[d&i]=d&(r^=19*t[d&i])+n.charCodeAt(i++);return o(t)}function a(e){try{return l.crypto.getRandomValues(e=new Uint8Array(s)),o(e)}catch(e){return[+new Date,l,l.navigator&&l.navigator.plugins,l.screen,o(f)]}}function o(e){return String.fromCharCode.apply(0,e)}var s=256,u=6,c=52,f=[],l="undefined"==typeof t?window:t,p=Math.pow(s,u),h=Math.pow(2,c),m=2*h,d=s-1,g=Math.random;e.exports=function(t,c){if(c&&c.global===!0)return c.global=!1,Math.random=e.exports(t,c),c.global=!0,Math.random;var l=c&&c.entropy||!1,d=[],g=(i(n(l?[t,o(f)]:0 in arguments?t:a(),3),d),new r(d));return i(o(g.S),f),function(){for(var e=g.g(u),t=p,r=0;e<h;)e=(e+r)*s,t*=s,r=g.g(1);for(;e>=m;)e/=2,t/=2,r>>>=1;return(e+r)/t}},e.exports.resetGlobal=function(){Math.random=g},i(Math.random(),f)}).call(t,r(517))},function(e,t){function r(){}r.prototype={on:function(e,t,r){var n=this.e||(this.e={});return(n[e]||(n[e]=[])).push({fn:t,ctx:r}),this},once:function(e,t,r){function n(){i.off(e,n),t.apply(r,arguments)}var i=this;return n._=t,this.on(e,n,r)},emit:function(e){var t=[].slice.call(arguments,1),r=((this.e||(this.e={}))[e]||[]).slice(),n=0,i=r.length;for(n;n<i;n++)r[n].fn.apply(r[n].ctx,t);return this},off:function(e,t){var r=this.e||(this.e={}),n=r[e],i=[];if(n&&t)for(var a=0,o=n.length;a<o;a++)n[a].fn!==t&&n[a].fn._!==t&&i.push(n[a]);return i.length?r[e]=i:delete r[e],this}},e.exports=r},function(e,t,r){"use strict";var n,i,a;!function(r,o){i=[],n=o,a="function"==typeof n?n.apply(t,i):n,!(void 0!==a&&(e.exports=a))}(this,function(){function e(){function t(e){for(var t,r=0;r<M.types.length;r++){var n=M.types[r];if(n.name===e){t=n.test;break}}if(!t){var i;for(r=0;r<M.types.length;r++)if(n=M.types[r],n.name.toLowerCase()==e.toLowerCase()){i=n.name;break}throw new Error('Unknown type "'+e+'"'+(i?'. Did you mean "'+i+'"?':""))}return t}function r(e){for(var t="",r=0;r<e.length;r++){var n=e[r];if(n.signatures&&""!=n.name)if(""==t)t=n.name;else if(t!=n.name){var i=new Error("Function names do not match (expected: "+t+", actual: "+n.name+")");throw i.data={actual:n.name,expected:t},i}}return t}function n(e,t,r,n,i){var a,o=d(n),s=i?i.split(","):null,u=e||"unnamed",c=s&&g(s,"any"),f={fn:e,index:r,actual:n,expected:s};a=s?t>r&&!c?"Unexpected type of argument in function "+u+" (expected: "+s.join(" or ")+", actual: "+o+", index: "+r+")":"Too few arguments in function "+u+" (expected: "+s.join(" or ")+", index: "+r+")":"Too many arguments in function "+u+" (expected: "+r+", actual: "+t+")";var l=new TypeError(a);return l.data=f,l}function i(e){this.name=e||"refs",this.categories={}}function a(e,t){if("string"==typeof e){var r=e.trim(),n="..."===r.substr(0,3);if(n&&(r=r.substr(3)),""===r)this.types=["any"];else{this.types=r.split("|");for(var i=0;i<this.types.length;i++)this.types[i]=this.types[i].trim()}}else{if(!Array.isArray(e)){if(e instanceof a)return e.clone();throw new Error("String or Array expected")}this.types=e}this.conversions=[],this.varArgs=n||t||!1,this.anyType=this.types.indexOf("any")!==-1}function o(e,t){var r;if("string"==typeof e)r=""!==e?e.split(","):[];else{if(!Array.isArray(e))throw new Error("string or Array expected");r=e}this.params=new Array(r.length),this.anyType=!1,this.varArgs=!1;for(var n=0;n<r.length;n++){var i=new a(r[n]);if(this.params[n]=i,i.anyType&&(this.anyType=!0),n===r.length-1)this.varArgs=i.varArgs;else if(i.varArgs)throw new SyntaxError('Unexpected variable arguments operator "..."')}this.fn=t}function s(e,t,r,n){this.path=e||[],this.param=e[e.length-1]||null,this.signature=t||null,this.childs=r||[],this.fallThrough=n||!1}function u(e){var t,r,n={},i=[];for(var a in e)if(e.hasOwnProperty(a)){var s=e[a];if(t=new o(a,s),t.ignore())continue;var u=t.expand();for(r=0;r<u.length;r++){var c=u[r],f=c.toString(),l=n[f];if(l){var p=o.compare(c,l);if(p<0)n[f]=c;else if(0===p)throw new Error('Signature "'+f+'" is defined twice')}else n[f]=c}}for(f in n)n.hasOwnProperty(f)&&i.push(n[f]);for(i.sort(function(e,t){return o.compare(e,t)}),r=0;r<i.length;r++)if(t=i[r],t.varArgs)for(var h=t.params.length-1,m=t.params[h],d=0;d<m.types.length;){if(m.conversions[d])for(var v=m.types[d],y=0;y<i.length;y++){var x=i[y],w=x.params[h];if(x!==t&&w&&g(w.types,v)&&!w.conversions[h]){m.types.splice(d,1),m.conversions.splice(d,1),d--;break}}d++}return i}function c(e){for(var t=[],r=0;r<e.length;r++)e[r].anyType&&t.push(e[r]);return t}function f(e){for(var t={},r=0;r<e.length;r++){var n=e[r];if(n.fn&&!n.hasConversions()){var i=n.params.join(",");t[i]=n.fn}}return t}function l(e,t,r){var n,i,o,u=t.length,c=[];for(n=0;n<e.length;n++)i=e[n],i.params.length!==u||o||(o=i),void 0!=i.params[u]&&c.push(i);c.sort(function(e,t){return a.compare(e.params[u],t.params[u])});var f=[];for(n=0;n<c.length;n++){i=c[n];var p=i.params[u],h=f.filter(function(e){return e.param.overlapping(p)})[0];if(h){if(h.param.varArgs)throw new Error('Conflicting types "'+h.param+'" and "'+p+'"');h.signatures.push(i)}else f.push({param:p,signatures:[i]})}var m=[];for(n=0;n<r.length;n++)r[n].paramsStartWith(t)&&m.push(r[n]);var d=!1;for(n=0;n<m.length;n++)if(!g(e,m[n])){d=!0;break}var v=new Array(f.length);for(n=0;n<f.length;n++){var y=f[n];v[n]=l(y.signatures,t.concat(y.param),m)}return new s(t,o,v,d)}function p(e){for(var t=[],r=0;r<e;r++)t[r]="arg"+r;return t}function h(e,t){var r=new i,a=u(t);if(0==a.length)throw new Error("No signatures provided");var o=c(a),s=l(a,[],o),h=[],d=e||"",g=p(m(a));h.push("function "+d+"("+g.join(", ")+") {"),h.push('  "use strict";'),h.push("  var name = '"+d+"';"),h.push(s.toCode(r,"  ",!1)),h.push("}");var v=[r.toCode(),"return "+h.join("\n")].join("\n"),y=new Function(r.name,"createError",v),x=y(r,n);return x.signatures=f(a),x}function m(e){for(var t=0,r=0;r<e.length;r++){var n=e[r].params.length;n>t&&(t=n)}return t}function d(e){for(var t,r=0;r<M.types.length;r++){var n=M.types[r];if("Object"===n.name)t=n;else if(n.test(e))return n.name}return t&&t.test(e)?t.name:"unknown"}function g(e,t){return e.indexOf(t)!==-1}function v(e){return e[e.length-1]}function y(e,t){if(!e.signatures)throw new TypeError("Function is no typed-function");var r;if("string"==typeof t){r=t.split(",");for(var n=0;n<r.length;n++)r[n]=r[n].trim()}else{if(!Array.isArray(t))throw new TypeError("String array or a comma separated string expected");r=t}var i=r.join(","),a=e.signatures[i];if(a)return a;throw new TypeError("Signature not found (signature: "+(e.name||"unnamed")+"("+r.join(", ")+"))")}function x(e,t){var r=d(e);if(t===r)return e;for(var n=0;n<M.conversions.length;n++){var i=M.conversions[n];if(i.from===r&&i.to===t)return i.convert(e)}throw new Error("Cannot convert from "+r+" to "+t)}i.prototype.add=function(e,t){var r=t||"fn";this.categories[r]||(this.categories[r]=[]);var n=this.categories[r].indexOf(e);return n==-1&&(n=this.categories[r].length,this.categories[r].push(e)),r+n},i.prototype.toCode=function(){var e=[],t=this.name+".categories",r=this.categories;for(var n in r)if(r.hasOwnProperty(n))for(var i=r[n],a=0;a<i.length;a++)e.push("var "+n+a+" = "+t+"['"+n+"']["+a+"];");return e.join("\n")},a.compare=function(e,t){if(e.anyType)return 1;if(t.anyType)return-1;if(g(e.types,"Object"))return 1;if(g(t.types,"Object"))return-1;if(e.hasConversions()){if(t.hasConversions()){var r,n,i;for(r=0;r<e.conversions.length;r++)if(void 0!==e.conversions[r]){n=e.conversions[r];break}for(r=0;r<t.conversions.length;r++)if(void 0!==t.conversions[r]){i=t.conversions[r];break}return M.conversions.indexOf(n)-M.conversions.indexOf(i)}return 1}if(t.hasConversions())return-1;var a,o;for(r=0;r<M.types.length;r++)if(M.types[r].name===e.types[0]){a=r;break}for(r=0;r<M.types.length;r++)if(M.types[r].name===t.types[0]){o=r;break}return a-o},a.prototype.overlapping=function(e){for(var t=0;t<this.types.length;t++)if(g(e.types,this.types[t]))return!0;return!1},a.prototype.matches=function(e){return this.anyType||e.anyType||this.overlapping(e)},a.prototype.clone=function(){var e=new a(this.types.slice(),this.varArgs);return e.conversions=this.conversions.slice(),e},a.prototype.hasConversions=function(){return this.conversions.length>0},a.prototype.contains=function(e){for(var t=0;t<this.types.length;t++)if(e[this.types[t]])return!0;return!1},a.prototype.toString=function(e){for(var t=[],r={},n=0;n<this.types.length;n++){var i=this.conversions[n],a=e&&i?i.to:this.types[n];a in r||(r[a]=!0,t.push(a))}return(this.varArgs?"...":"")+t.join("|")},o.prototype.clone=function(){return new o(this.params.slice(),this.fn)},o.prototype.expand=function(){function e(r,n){if(n.length<r.params.length){var i,s,u,c=r.params[n.length];if(c.varArgs){for(s=c.clone(),i=0;i<M.conversions.length;i++)if(u=M.conversions[i],!g(c.types,u.from)&&g(c.types,u.to)){var f=s.types.length;s.types[f]=u.from,s.conversions[f]=u}e(r,n.concat(s))}else{for(i=0;i<c.types.length;i++)e(r,n.concat(new a(c.types[i])));for(i=0;i<M.conversions.length;i++)u=M.conversions[i],!g(c.types,u.from)&&g(c.types,u.to)&&(s=new a(u.from),s.conversions[0]=u,e(r,n.concat(s)))}}else t.push(new o(n,r.fn))}var t=[];return e(this,[]),t},o.compare=function(e,t){if(e.params.length>t.params.length)return 1;if(e.params.length<t.params.length)return-1;var r,n=e.params.length,i=0,o=0;for(r=0;r<n;r++)e.params[r].hasConversions()&&i++,t.params[r].hasConversions()&&o++;if(i>o)return 1;if(i<o)return-1;for(r=0;r<e.params.length;r++){var s=a.compare(e.params[r],t.params[r]);if(0!==s)return s}return 0},o.prototype.hasConversions=function(){for(var e=0;e<this.params.length;e++)if(this.params[e].hasConversions())return!0;return!1},o.prototype.ignore=function(){for(var e={},t=0;t<M.ignore.length;t++)e[M.ignore[t]]=!0;for(t=0;t<this.params.length;t++)if(this.params[t].contains(e))return!0;return!1},o.prototype.paramsStartWith=function(e){if(0===e.length)return!0;for(var t=v(this.params),r=v(e),n=0;n<e.length;n++){var i=this.params[n]||(t.varArgs?t:null),a=e[n]||(r.varArgs?r:null);if(!i||!a||!i.matches(a))return!1}return!0},o.prototype.toCode=function(e,t){for(var r=[],n=new Array(this.params.length),i=0;i<this.params.length;i++){var a=this.params[i],o=a.conversions[0];a.varArgs?n[i]="varArgs":o?n[i]=e.add(o.convert,"convert")+"(arg"+i+")":n[i]="arg"+i}var s=this.fn?e.add(this.fn,"signature"):void 0;return s?t+"return "+s+"("+n.join(", ")+"); // signature: "+this.params.join(", "):r.join("\n")},o.prototype.toString=function(){return this.params.join(", ")},s.prototype.toCode=function(e,r){var n=[];if(this.param){var i=this.path.length-1,a=this.param.conversions[0],o="// type: "+(a?a.from+" (convert to "+a.to+")":this.param);if(this.param.varArgs)if(this.param.anyType)n.push(r+"if (arguments.length > "+i+") {"),n.push(r+"  var varArgs = [];"),n.push(r+"  for (var i = "+i+"; i < arguments.length; i++) {"),n.push(r+"    varArgs.push(arguments[i]);"),n.push(r+"  }"),n.push(this.signature.toCode(e,r+"  ")),n.push(r+"}");else{for(var s=function(r,n){for(var i=[],a=0;a<r.length;a++)i[a]=e.add(t(r[a]),"test")+"("+n+")";return i.join(" || ")}.bind(this),u=this.param.types,c=[],f=0;f<u.length;f++)void 0===this.param.conversions[f]&&c.push(u[f]);n.push(r+"if ("+s(u,"arg"+i)+") { "+o),n.push(r+"  var varArgs = [arg"+i+"];"),n.push(r+"  for (var i = "+(i+1)+"; i < arguments.length; i++) {"),n.push(r+"    if ("+s(c,"arguments[i]")+") {"),n.push(r+"      varArgs.push(arguments[i]);");for(var f=0;f<u.length;f++){var l=this.param.conversions[f];if(l){var p=e.add(t(u[f]),"test"),h=e.add(l.convert,"convert");n.push(r+"    }"),n.push(r+"    else if ("+p+"(arguments[i])) {"),n.push(r+"      varArgs.push("+h+"(arguments[i]));")}}n.push(r+"    } else {"),n.push(r+"      throw createError(name, arguments.length, i, arguments[i], '"+c.join(",")+"');"),n.push(r+"    }"),n.push(r+"  }"),n.push(this.signature.toCode(e,r+"  ")),n.push(r+"}")}else if(this.param.anyType)n.push(r+"// type: any"),n.push(this._innerCode(e,r));else{var m=this.param.types[0],p="any"!==m?e.add(t(m),"test"):null;n.push(r+"if ("+p+"(arg"+i+")) { "+o),n.push(this._innerCode(e,r+"  ")),n.push(r+"}")}}else n.push(this._innerCode(e,r));return n.join("\n")},s.prototype._innerCode=function(e,t){var r,n=[];for(this.signature&&(n.push(t+"if (arguments.length === "+this.path.length+") {"),n.push(this.signature.toCode(e,t+"  ")),n.push(t+"}")),r=0;r<this.childs.length;r++)n.push(this.childs[r].toCode(e,t));if(!this.fallThrough||this.param&&this.param.anyType){var i=this._exceptions(e,t);i&&n.push(i)}return n.join("\n")},s.prototype._exceptions=function(e,t){var r=this.path.length;if(0===this.childs.length)return[t+"if (arguments.length > "+r+") {",t+"  throw createError(name, arguments.length, "+r+", arguments["+r+"]);",t+"}"].join("\n");for(var n={},i=[],a=0;a<this.childs.length;a++){var o=this.childs[a];if(o.param)for(var s=0;s<o.param.types.length;s++){var u=o.param.types[s];u in n||o.param.conversions[s]||(n[u]=!0,i.push(u))}}return t+"throw createError(name, arguments.length, "+r+", arguments["+r+"], '"+i.join(",")+"');"};var w=[{name:"number",test:function(e){return"number"==typeof e}},{name:"string",test:function(e){return"string"==typeof e}},{name:"boolean",test:function(e){return"boolean"==typeof e}},{name:"Function",test:function(e){return"function"==typeof e}},{name:"Array",test:Array.isArray},{name:"Date",test:function(e){return e instanceof Date}},{name:"RegExp",test:function(e){return e instanceof RegExp}},{name:"Object",test:function(e){return"object"==typeof e}},{name:"null",test:function(e){return null===e}},{name:"undefined",test:function(e){return void 0===e}}],b={},N=[],E=[],M={config:b,types:w,conversions:N,ignore:E};return M=h("typed",{Object:function(e){var t=[];for(var n in e)e.hasOwnProperty(n)&&t.push(e[n]);var i=r(t);return h(i,e)},"string, Object":h,"...Function":function(e){for(var t,n=r(e),i={},a=0;a<e.length;a++){var o=e[a];if("object"!=typeof o.signatures)throw t=new TypeError("Function is no typed-function (index: "+a+")"),t.data={index:a},t;for(var s in o.signatures)if(o.signatures.hasOwnProperty(s))if(i.hasOwnProperty(s)){if(o.signatures[s]!==i[s])throw t=new Error('Signature "'+s+'" is defined twice'),t.data={signature:s},t}else i[s]=o.signatures[s]}return h(n,i)}}),M.config=b,M.types=w,M.conversions=N,M.ignore=E,M.create=e,M.find=y,M.convert=x,M.addType=function(e){if(!e||"string"!=typeof e.name||"function"!=typeof e.test)throw new TypeError("Object with properties {name: string, test: function} expected");M.types.push(e)},M.addConversion=function(e){if(!e||"string"!=typeof e.from||"string"!=typeof e.to||"function"!=typeof e.convert)throw new TypeError("Object with properties {from: string, to: string, convert: function} expected");M.conversions.push(e)},M}return e()})},function(e,t){var r;r=function(){return this}();try{r=r||Function("return this")()||(0,eval)("this")}catch(e){"object"==typeof window&&(r=window)}e.exports=r},function(e,t,r){function n(e){var t=i.create(e);return t.create=n,t.import(r(140)),t}var i=r(139);e.exports=n()}])});
-//# sourceMappingURL=math.map
+
+},{}]},{},[1]);

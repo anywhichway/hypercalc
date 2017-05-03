@@ -1,20 +1,18 @@
 {
   "name": "hypercalc",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An mult-dimensional JavaScript spreadsheet",
-  "engines": {
-    
-  },
+  "engines": {},
   "license": "MIT",
   "scripts": {
-    
+  	"prepublish": "browserify index.js -o browser/hypercalc.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/anywhichway/hypercalc.git"
   },
   "keywords": [
-  	"spreadsheet"
+    "spreadsheet"
   ],
   "author": "Simon Y. Blackwell <syblackwell@anywhichway.com> (http://www.github.com/anywhichway)",
   "bugs": {
@@ -22,9 +20,9 @@
   },
   "homepage": "https://github.com/anywhichway/hypercalc#readme",
   "devDependencies": {
-   
+  	"console-time": "^1.0.9"
   },
   "dependencies": {
-   
+    "mathjs": "^3.12.2"
   }
 }
