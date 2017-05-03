@@ -1,2 +1,2 @@
 # hypercalc
-An mult-dimensional JavaScript spreadsheet
+An multi-dimensional JavaScript spreadsheet
