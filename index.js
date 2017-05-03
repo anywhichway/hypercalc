@@ -336,13 +336,33 @@ SOFTWARE.*/
 		if(v.length===0) return 0;
 		return math.var(...v); // need to change to a "reduce" to avoid stack overflows
 	}
+	FUNCTIONS.stdev = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		v = v.filter(item => typeof(item)==="number");
+		if(v.length===0) return 0;
+		return math.std(...v); // need to change to a "reduce" to avoid stack overflows
+	}
+	FUNCTIONS.madev = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		v = v.filter(item => typeof(item)==="number");
+		if(v.length===0) return 0;
+		return math.mad(...v); // need to change to a "reduce" to avoid stack overflows
+	}
 	for(let key in math) { // need to be more selective about below and change some to "reduce" to avoid stack overflows
-		if(!FUNCTIONS[key] && !["chain","clone","config","compile","createUnit","false","forEach","format","index","import","json","matrix","print","help","map","null","parse","parser","range","sparse","true","typed","typeof","var"].includes(key)) {
-			FUNCTIONS[key] = function() {
-				let v, options;
-				[v,options] = getargs([...arguments]);
-				if(options && options.if) v = v.filter(options.if);
-				return math[key](...v);
+		if(!FUNCTIONS[key] && !["chain","clone","config","compile","createUnit","emit","eval","false","forEach","format","index","Infinity","import","json","matrix","NaN","print","help","map","null","parse","parser","range","sparse","true","typed","typeof","var"].includes(key)) {
+			if(typeof(math[key])==="function") {
+				FUNCTIONS[key] = function() {
+					let v, options;
+					[v,options] = getargs([...arguments]);
+					if(options && options.if) v = v.filter(options.if);
+					return math[key](...v);
+				}
+			} else {
+				FUNCTIONS[key.toLowerCase()] = () => math[key];
 			}
 		}
 	}

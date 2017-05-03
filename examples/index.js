@@ -1,6 +1,5 @@
 if(typeof(module)==="object") {
 	Hypercalc = require("../index.js");
-	require("console-time");
 }
 
 const hc = new Hypercalc(),

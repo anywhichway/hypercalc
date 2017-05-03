@@ -23,6 +23,27 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 		s(r[o]);
 	}return s;
 })({ 1: [function (require, module, exports) {
+		/*MIT License
+  
+  Copyright (c) 2017 Simon Y. Blackwell, AnyWhichWay, LLC
+  
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.*/
 		(function () {
 			"use strict";
 
@@ -559,7 +580,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 					return typeof item === "number" || Array.isArray(item);
 				});
 				if (v.length === 0) return 0;
-				return math.divide.apply(math, _toConsumableArray(v));
+				return math.divide.apply(math, _toConsumableArray(v)); // need to change to a "reduce" to avoid stack overflows
 			};
 			FUNCTIONS.quotienta = function () {
 				var v = void 0,
@@ -656,25 +677,68 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 					return typeof item === "number";
 				});
 				if (v.length === 0) return 0;
-				return math.var.apply(math, _toConsumableArray(v));
+				return math.var.apply(math, _toConsumableArray(v)); // need to change to a "reduce" to avoid stack overflows
+			};
+			FUNCTIONS.stdev = function () {
+				var v = void 0,
+				    options = void 0;
+
+				var _getargs47 = getargs([].concat(Array.prototype.slice.call(arguments)));
+
+				var _getargs48 = _slicedToArray(_getargs47, 2);
+
+				v = _getargs48[0];
+				options = _getargs48[1];
+
+				if (options && options.if) v = v.filter(options.if);
+				v = v.filter(function (item) {
+					return typeof item === "number";
+				});
+				if (v.length === 0) return 0;
+				return math.std.apply(math, _toConsumableArray(v)); // need to change to a "reduce" to avoid stack overflows
+			};
+			FUNCTIONS.madev = function () {
+				var v = void 0,
+				    options = void 0;
+
+				var _getargs49 = getargs([].concat(Array.prototype.slice.call(arguments)));
+
+				var _getargs50 = _slicedToArray(_getargs49, 2);
+
+				v = _getargs50[0];
+				options = _getargs50[1];
+
+				if (options && options.if) v = v.filter(options.if);
+				v = v.filter(function (item) {
+					return typeof item === "number";
+				});
+				if (v.length === 0) return 0;
+				return math.mad.apply(math, _toConsumableArray(v)); // need to change to a "reduce" to avoid stack overflows
 			};
 
 			var _loop = function _loop(key) {
-				if (!FUNCTIONS[key] && !["chain", "clone", "config", "compile", "createUnit", "false", "forEach", "format", "index", "import", "json", "matrix", "print", "help", "map", "null", "parse", "parser", "range", "sparse", "true", "typed", "typeof", "var"].includes(key)) {
-					FUNCTIONS[key] = function () {
-						var v = void 0,
-						    options = void 0;
+				// need to be more selective about below and change some to "reduce" to avoid stack overflows
+				if (!FUNCTIONS[key] && !["chain", "clone", "config", "compile", "createUnit", "emit", "eval", "false", "forEach", "format", "index", "Infinity", "import", "json", "matrix", "NaN", "print", "help", "map", "null", "parse", "parser", "range", "sparse", "true", "typed", "typeof", "var"].includes(key)) {
+					if (typeof math[key] === "function") {
+						FUNCTIONS[key] = function () {
+							var v = void 0,
+							    options = void 0;
 
-						var _getargs47 = getargs([].concat(Array.prototype.slice.call(arguments)));
+							var _getargs51 = getargs([].concat(Array.prototype.slice.call(arguments)));
 
-						var _getargs48 = _slicedToArray(_getargs47, 2);
+							var _getargs52 = _slicedToArray(_getargs51, 2);
 
-						v = _getargs48[0];
-						options = _getargs48[1];
+							v = _getargs52[0];
+							options = _getargs52[1];
 
-						if (options && options.if) v = v.filter(options.if);
-						return math[key].apply(math, _toConsumableArray(v));
-					};
+							if (options && options.if) v = v.filter(options.if);
+							return math[key].apply(math, _toConsumableArray(v));
+						};
+					} else {
+						FUNCTIONS[key.toLowerCase()] = function () {
+							return math[key];
+						};
+					}
 				}
 			};
 
