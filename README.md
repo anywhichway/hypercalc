@@ -11,20 +11,20 @@ The below list covers approximately 60% of Hypercalc functionality. We have a lo
 
 <table>
 
-<tr><th colspan='3' align='left'>Unary Numeric Functions</th></tr><tr><td>Name</td><td>Example</td><td>Result</td></tr>
+ <tr><th colspan='3' align='left'>Unary Numeric Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>
     <tr><td>abs</td><td>=abs(3.5)</td><td>3.5</td></tr>
-    <tr><td>acos</td><td>=acos(3.5)</td><td>{"mathjs":"Complex","re":0,"im":1.9248473002384139}</td></tr>
+    <tr><td>acos</td><td>=acos(3.5)</td><td>1.9248473002384139i</td></tr>
     <tr><td>acosh</td><td>=acosh(3.5)</td><td>1.9248473002384139</td></tr>
     <tr><td>acot</td><td>=acot(3.5)</td><td>0.27829965900511133</td></tr>
     <tr><td>acoth</td><td>=acoth(3.5)</td><td>0.29389333245105953</td></tr>
     <tr><td>acsc</td><td>=acsc(3.5)</td><td>0.28975170143604745</td></tr>
     <tr><td>acsch</td><td>=acsch(3.5)</td><td>0.28196323918998284</td></tr>
     <tr><td>asec</td><td>=asec(3.5)</td><td>1.2810446253588492</td></tr>
-    <tr><td>asech</td><td>=asech(3.5)</td><td>{"mathjs":"Complex","re":1.1102230246251564e-16,"im":-1.2810446253588492}</td></tr>
-    <tr><td>asin</td><td>=asin(3.5)</td><td>{"mathjs":"Complex","re":1.5707963267948966,"im":-1.9248473002384139}</td></tr>
+    <tr><td>asech</td><td>=asech(3.5)</td><td>1.1102230246251564e-16 - 1.2810446253588492i</td></tr>
+    <tr><td>asin</td><td>=asin(3.5)</td><td>1.5707963267948966 - 1.9248473002384139i</td></tr>
     <tr><td>asinh</td><td>=asinh(3.5)</td><td>1.9657204716496515</td></tr>
     <tr><td>atan</td><td>=atan(3.5)</td><td>1.2924966677897853</td></tr>
-    <tr><td>atanh</td><td>=atanh(3.5)</td><td>{"mathjs":"Complex","re":0.29389333245105953,"im":-1.5707963267948966}</td></tr>
+    <tr><td>atanh</td><td>=atanh(3.5)</td><td>0.29389333245105953 - 1.5707963267948966i</td></tr>
     <tr><td>ceil</td><td>=ceil(3.5)</td><td>4</td></tr>
     <tr><td>cos</td><td>=cos(3.5)</td><td>-0.9364566872907963</td></tr>
     <tr><td>cosh</td><td>=cosh(3.5)</td><td>16.572824671057315</td></tr>
@@ -53,7 +53,7 @@ The below list covers approximately 60% of Hypercalc functionality. We have a lo
     <tr><td>tan</td><td>=tan(3.5)</td><td>0.3745856401585947</td></tr>
     <tr><td>tanh</td><td>=tanh(3.5)</td><td>0.9981778976111987</td></tr>
 
-  <tr><th colspan='3' align='left'>Multi Argument Numeric Functions</th></tr><tr><td>Name</td><td>Example</td><td>Result</td></tr>
+  <tr><th colspan='3' align='left'>Multi Argument Numeric Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>
     <tr><td>average</td><td>=average(0,1,2,3,3,4,5,6)</td><td>3</td></tr>
     <tr><td>max</td><td>=max(0,1,2,3,3,4,5,6)</td><td>6</td></tr>
     <tr><td>median</td><td>=median(0,1,2,3,3,4,5,6)</td><td>3</td></tr>
@@ -63,9 +63,9 @@ The below list covers approximately 60% of Hypercalc functionality. We have a lo
     <tr><td>stdev</td><td>=stdev(0,1,2,3,3,4,5,6)</td><td>2</td></tr>
     <tr><td>sum</td><td>=sum(0,1,2,3,3,4,5,6)</td><td>24</td></tr>
 
-  <tr><th colspan='3' align='left'>Constants</th></tr><tr><td>Name</td><td>Example</td><td>Result</td></tr>
+  <tr><th colspan='3' align='left'>Constants</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>
     <tr><td>e</td><td>=e()</td><td>2.718281828459045</td></tr>
-    <tr><td>i</td><td>=i()</td><td>{"mathjs":"Complex","re":0,"im":1}</td></tr>
+    <tr><td>i</td><td>=i()</td><td>i</td></tr>
     <tr><td>pi</td><td>=pi()</td><td>3.141592653589793</td></tr>
     <tr><td>ln2</td><td>=ln2()</td><td>0.6931471805599453</td></tr>
     <tr><td>ln10</td><td>=ln10()</td><td>2.302585092994046</td></tr>

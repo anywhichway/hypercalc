@@ -10,26 +10,26 @@ const hc = new Hypercalc();
 const unaryNumericFunctions = ["abs","acos","acosh","acot","acoth","acsc","acsch","asec","asech","asin","asinh","atan","atanh","ceil",
 "cos","cosh","cot","coth","csc","csch","cube","factorial","floor","gamma","isInteger","isNegative","isNumeric","isPositive","isPrime","isZero","isNaN",
 "log10","sec","sech","sin","sinh","sqrt","square","tan","tanh"];
-describe("<tr><th colspan='3' align='left'>Unary Numeric Functions</th></tr><tr><td>Name</td><td>Example</td><td>Result</td></tr>", function() {
+describe("<tr><th colspan='3' align='left'>Unary Numeric Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name of unaryNumericFunctions) {
 		const fname = (Array.isArray(name) ? name[0] : name),
 			mname = (Array.isArray(name) ? name[1] : name),
 			formula = "="+fname+"(3.5)",
 			result = math[mname](3.5),
-			title = "<tr><td>" + fname + "</td><td>" + formula + "</td><td>" + JSON.stringify(result) + "</td></tr>";
+			title = "<tr><td>" + fname + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
 		it(title,function(done) {
 			hc.Cell(fname,formula,{oncalculated:(cell) => { done(assert.equal(cell.value+"",result+"")); }});
 		})
 	}
 });
 const multiNumericFunctions = [["average","mean"],"max","median","min","mode",["product","prod"],["stdev","std"],"sum",];
-describe("<tr><th colspan='3' align='left'>Multi Argument Numeric Functions</th></tr><tr><td>Name</td><td>Example</td><td>Result</td></tr>", function() {
+describe("<tr><th colspan='3' align='left'>Multi Argument Numeric Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name of multiNumericFunctions) {
 		const fname = (Array.isArray(name) ? name[0] : name),
 			mname = (Array.isArray(name) ? name[1] : name),
 			formula = "="+fname+"(0,1,2,3,3,4,5,6)",
 			result = math[mname](0,1,2,3,3,4,5,6),
-			title = "<tr><td>" + fname + "</td><td>" + formula + "</td><td>" + JSON.stringify(result) + "</td></tr>";
+			title = "<tr><td>" + fname + "</td><td>" + formula + "</td><td>" + (Array.isArray(result) ? JSON.stringify(result) : result) + "</td></tr>";
 		it(title,function(done) {
 			hc.Cell(fname,formula,{oncalculated:(cell) => { done(assert.equal(cell.value+"",result+"")); }});
 		})
@@ -37,13 +37,13 @@ describe("<tr><th colspan='3' align='left'>Multi Argument Numeric Functions</th>
 });
 const constants = ["e","i","pi",["ln2","LN2"],["ln10","LN10"],["log2e","LOG2E"],["log10e","LOG10E"],"phi","tau"];
 // make full table
-describe("<tr><th colspan='3' align='left'>Constants</th></tr><tr><td>Name</td><td>Example</td><td>Result</td></tr>", function() {
+describe("<tr><th colspan='3' align='left'>Constants</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name of constants) {
 		const fname = (Array.isArray(name) ? name[0] : name),
 			mname = (Array.isArray(name) ? name[1] : name),
 			formula = "="+fname+"()",
 			result = math[mname],
-			title = "<tr><td>" + fname + "</td><td>" + formula + "</td><td>" + JSON.stringify(result) + "</td></tr>";
+			title = "<tr><td>" + fname + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
 		it(title,function(done) {
 			hc.Cell(fname,formula,{oncalculated:(cell) => { done(assert.equal(cell.value+"",result+"")); }});
 		})
