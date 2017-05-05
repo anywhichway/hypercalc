@@ -61,6 +61,21 @@ hc.Cell("Test38","=dotProduct($a('Tab1|Tab2.*.1'),$a('Tab1|Tab2.*.1'))",{oncalcu
 hc.Cell("Tab4.1.1","=extend([[9, 5], [6, 1],[3, 2], [5, 2]])",{oncalculated:cell => console.log("Tab4.1.1",JSON.stringify(cell.value))}); // options: {transpose:true}
 hc.Cell("Test39","=intersection([1,2,3],[2,3,4])",{oncalculated:cell => console.log("Test39",JSON.stringify(cell.value))}); 
 hc.Cell("Test40","=cos(1)",{oncalculated:cell => console.log("Test40",JSON.stringify(cell.value),Math.cos(1))});
+hc.Cell("Test41","=difference([1,2,3],1)",{oncalculated:cell => console.log("Test41",JSON.stringify(cell.value),[0,1,2])});
+hc.Cell("Test42","=difference([1,2,3],[1,2,3])",{oncalculated:cell => console.log("Test42",JSON.stringify(cell.value),[0,0,0])});
+hc.Cell("Test43","=difference([1,2,3],[1,2,3],1)",{oncalculated:cell => console.log("Test43",JSON.stringify(cell.value),[-1,-1,-1])});
+hc.Cell("Test44","=product([1,2,3],2)",{oncalculated:cell => console.log("Test44",JSON.stringify(cell.value),[2,4,6])});
+hc.Cell("Test45","=product([1,2,3],[1,2,3])",{oncalculated:cell => console.log("Test45",JSON.stringify(cell.value),[1,4,9])});
+hc.Cell("Test46","=product([1,2,3],[1,2,3],2)",{oncalculated:cell => console.log("Test46",JSON.stringify(cell.value),[2,8,18])});
+hc.Cell("Test47","=product([[2, 0], [-1, 3]],[[7, 1], [-2, 3]])",{oncalculated:cell => console.log("Test47",JSON.stringify(cell.value),[[14, 2], [-13, 8]])});
+hc.Cell("Test48","=dotProduct([[2, 0], [-1, 3]],[[7, 1], [-2, 3]])",{oncalculated:cell => console.log("Test48",JSON.stringify(cell.value),[[14, 0], [2, 9]])});
+hc.Cell("Test49","=sum([1,2,3],1)",{oncalculated:cell => console.log("Test49",JSON.stringify(cell.value),[2,3,4])});
+hc.Cell("Test50","=sum([1,2,3],[1,2,3])",{oncalculated:cell => console.log("Test50",JSON.stringify(cell.value),[2,4,6])});
+hc.Cell("Test51","=sum([1,2,3],[1,2,3],1)",{oncalculated:cell => console.log("Test51",JSON.stringify(cell.value),[3,5,7])});
+hc.Cell("Test52","=average([1,2,3,4,5,6])",{oncalculated:cell => console.log("Test52",JSON.stringify(cell.value),3.5)});
+hc.Cell("Test53","=sum([1,2,3,4,5,6])",{oncalculated:cell => console.log("Test53",JSON.stringify(cell.value),21)});
+
+
 
 //--stack_size
 

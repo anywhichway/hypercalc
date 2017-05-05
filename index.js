@@ -124,7 +124,7 @@ SOFTWARE.*/
 		for(let cell of cells) (options && options.if ? !options.if(cell.value) || values.push(cell.value) : values.push(cell.value));
 		return values;
 	}
-	FUNCTIONS.varg = function(arg) {
+	FUNCTIONS.destructure = FUNCTIONS.varg = function(arg) {
 		VARGS.push(arg);
 		return VARGS;
 	}
@@ -150,14 +150,16 @@ SOFTWARE.*/
 	FUNCTIONS.average = function() {
 		let v, options;
 		[v,options] = getargs([...arguments]);
+		if(Array.isArray(v[0])) v = v[0];
 		if(options && options.if) v = v.filter(options.if);
 		v = v.filter(item => typeof(item)==="number");
 		if(v.length===0) return 0;
-		return v.reduce((accumulator,current) => accumulator + current,0) / v.length;
+		return math.mean(v);
 	}
 	FUNCTIONS.averagea = function() {
 		let v, options;
 		[v,options] = getargs([...arguments]);
+		if(Array.isArray(v[0])) v = v[0];
 		if(options && options.if) v = v.filter(options.if);
 		if(v.length===0) return 0;
 		options = Object.assign({replace:replaceForA()},(options || {}));
@@ -176,6 +178,32 @@ SOFTWARE.*/
 		if(options && options.if) v = v.filter(options.if);
 		v = v.filter(item => item!==null && typeof(item)!=="undefined");
 		return v.length;
+	}
+	FUNCTIONS.difference = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(Array.isArray(v[0])) {
+			if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => math.subtract(accumulator,current));
+			else if(v.length>1){
+				v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
+				if(options && options.if) v = v.filter(options.if);
+				if(v.length===0) return 0;
+				return v.reduce((accumulator,current) => math.subtract(accumulator,current));
+			} else {
+				v = v[0];
+			}
+		}
+		if(v.length===0) return 0;
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		return v.reduce((accumulator,current) => accumulator - current);
+	}
+	FUNCTIONS.differencea = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		options = Object.assign({replace:replaceForA()},(options || {}));
+		if(options && options.if) v = v.filter(options.if);
+		return v.reduce((accumulator,current) => accumulator - coerce(current,options),0);
 	}
 	FUNCTIONS.extend = function() {
 		const parts = CURRENTCELL.coordinates.split("."),
@@ -208,59 +236,74 @@ SOFTWARE.*/
 	FUNCTIONS.max = function()  { // pattern,options or v1,v2,v3...options
 		let v, options;
 		[v,options] = getargs([...arguments]);
+		if(Array.isArray(v[0])) v = v[0];
 		if(options && options.if) v = v.filter(options.if);
 		if(v.length===0) return -Infinity;
-		if(Array.isArray(v[0])) return math.max(...v);
-		return v.reduce((accumulator,current) => accumulator > current ? accumulator : current,-Infinity);
+		return math.max(v);
 	}
 	FUNCTIONS.maxa = function()  {
 		let v, options;
 		[v,options] = getargs([...arguments]);
+		if(Array.isArray(v[0])) v = v[0];
 		if(options && options.if) v = v.filter(options.if);
 		if(v.length===0) return -Infinity;
 		options = Object.assign({replace:replaceForA()},(options || {}));
 		traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
-		if(Array.isArray(v[0])) return math.max(...v);
-		return v.reduce((accumulator,current) => accumulator > current ? accumulator : current,-Infinity);
+		return math.max(v);
 	}
 	FUNCTIONS.median = function() {
 		let v, options;
 		[v,options] = getargs([...arguments]);
 		if(options && options.if) v = v.filter(options.if);
-		return math.median(...v);
+		return math.median(v);
 	}
 	FUNCTIONS.mode = function() {
 		let v, options;
 		[v,options] = getargs([...arguments]);
 		if(options && options.if) v = v.filter(options.if);
-		return math.mode(...v);
+		return math.mode(v);
 	}
 	FUNCTIONS.min = function()  { // pattern,options or v1,v2,v3...options
 		let v, options;
 		[v,options] = getargs([...arguments]);
+		if(Array.isArray(v[0])) v = v[0];
 		if(options && options.if) v = v.filter(options.if);
 		if(v.length===0) return Infinity;
-		if(Array.isArray(v[0])) return math.min(...v);
-		return v.reduce((accumulator,current) => accumulator < current ? accumulator : current,Infinity);
+		return math.min(v);
 	}
 	FUNCTIONS.mina = function()  {
 		let v, options;
 		[v,options] = getargs([...arguments]);
+		if(Array.isArray(v[0])) v = v[0];
 		if(options && options.if) v = v.filter(options.if);
 		if(v.length===0) return Infinity;
 		options = Object.assign({replace:replaceForA()},(options || {}));
 		traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
-		if(Array.isArray(v[0])) return math.min(...v);
-		return v.reduce((accumulator,current) => accumulator < current ? accumulator : current,Infinity);
+		return math.min(v);
 	}
 	FUNCTIONS.product = function() {
 		let v, options;
 		[v,options] = getargs([...arguments]);
-		if(options && options.if) v = v.filter(options.if);
-		v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
+		if(Array.isArray(v[0])) {
+			if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => math.multiply(accumulator,current));
+			else if(v.length>1) {
+				v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
+				if(options && options.if) v = v.filter(options.if);
+				if(v.length===0) return 0;
+				v.reduce((accumulator,current) => math.dotMultiply(accumulator,current));
+			}
+			else v = v[0];
+		}
 		if(v.length===0) return 0;
-		if(Array.isArray(v[0])) return math.multiply(...v);
-		return v.reduce((accumulator,current) => accumulator * (typeof(current)==="number" ? current : 1),1);
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		return v.reduce((accumulator,current) => accumulator * current,1);
+	}
+	FUNCTIONS.dotProduct = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		return v.reduce((accumulator,current) => math.dotMultiply(accumulator,current));
 	}
 	FUNCTIONS.producta = function()  {
 		let v, options;
@@ -277,44 +320,71 @@ SOFTWARE.*/
 			null: 1,
 			Array: 1
 		},(options || {}));
-		traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
+		traverse(v,(item,i,array) => array[i] = coerce(item,{replace:options}));
 		if(Array.isArray(v[0])) return math.multiply(...v);
-		return v.reduce((accumulator,current) => accumulator * (typeof(current)==="number" ? current : 1),1);
-	}
-	FUNCTIONS.dotProduct = function() {
-		let v, options;
-		[v,options] = getargs([...arguments]);
-		if(options && options.if) v = v.filter(options.if);
-		return math.dotMultiply(...v);
+		return v.reduce((accumulator,current) => accumulator * current,1);
 	}
 	FUNCTIONS.quotient = function() {
 		let v, options;
 		[v,options] = getargs([...arguments]);
-		if(options && options.if) v = v.filter(options.if);
-		v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
+		if(Array.isArray(v[0])) {
+			if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => math.divide(accumulator,current));
+			else if(v.length>1) {
+				v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
+				if(options && options.if) v = v.filter(options.if);
+				if(v.length===0) return 0;
+				v.reduce((accumulator,current) => math.dotDivide(accumulator,current));
+			}
+			else v = v[0];
+		}
 		if(v.length===0) return 0;
-		return math.divide(...v); // need to change to a "reduce" to avoid stack overflows
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		return v.reduce((accumulator,current) => accumulator / current,1);
+	}
+	FUNCTIONS.dotQuotient = function() {
+		let v, options;
+		[v,options] = getargs([...arguments]);
+		if(options && options.if) v = v.filter(options.if);
+		return v.reduce((accumulator,current) => math.dotDivide(accumulator,current));
 	}
 	FUNCTIONS.quotienta = function()  {
 		let v, options;
 		[v,options] = getargs([...arguments]);
 		options = Object.assign({replace: { boolean: 1, string: 1, undefined: 1 }},(options || {}));
 		if(options.if) v = v.filter(options.if);
-		if(v.length===0) return -Infinity;
+		if(v.length===0) return Infinity;
+		options = Object.assign({
+			boolean: {
+				true: 1,
+				false: 0
+			},
+			string: 1,
+			undefined: 1,
+			null: 1,
+			Array: 1
+		},(options || {}));
+		traverse(v,(item,i,array) => array[i] = coerce(item,{replace:options}));
 		return v.reduce((accumulator,current) => accumulator / coerce(current,options),1);
-	}
-	FUNCTIONS.dotQuotient = function() {
-		let v, options;
-		[v,options] = getargs([...arguments]);
-		if(options && options.if) v = v.filter(options.if);
-		return math.dotDivide(...v);
 	}
 	FUNCTIONS.sum = function() {
 		let v, options;
 		[v,options] = getargs([...arguments]);
+		if(Array.isArray(v[0])) {
+			if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => math.add(accumulator,current));
+			else if(v.length>1){
+				v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
+				if(options && options.if) v = v.filter(options.if);
+				if(v.length===0) return 0;
+				return v.reduce((accumulator,current) => math.add(accumulator,current));
+			} else {
+				v = v[0];
+			}
+		}
+		if(v.length===0) return 0;
+		v = v.filter(item => typeof(item)==="number");
 		if(options && options.if) v = v.filter(options.if);
-		if(Array.isArray(v[0])) return math.add(...v);
-		return v.reduce((accumulator,current) => accumulator + (typeof(current)==="number" ? current : 0),0);
+		return v.reduce((accumulator,current) => accumulator + current);
 	}
 	FUNCTIONS.suma = function() {
 		let v, options;
@@ -331,26 +401,29 @@ SOFTWARE.*/
 	FUNCTIONS.variance = function() {
 		let v, options;
 		[v,options] = getargs([...arguments]);
-		if(options && options.if) v = v.filter(options.if);
+		if(Array.isArray(v[0])) v = v[0];
 		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
 		if(v.length===0) return 0;
-		return math.var(...v); // need to change to a "reduce" to avoid stack overflows
+		return math.var(v); // need to change to a "reduce" to avoid stack overflows
 	}
 	FUNCTIONS.stdev = function() {
 		let v, options;
 		[v,options] = getargs([...arguments]);
-		if(options && options.if) v = v.filter(options.if);
+		if(Array.isArray(v[0])) v = v[0];
 		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
 		if(v.length===0) return 0;
-		return math.std(...v); // need to change to a "reduce" to avoid stack overflows
+		return math.std(v); // need to change to a "reduce" to avoid stack overflows
 	}
 	FUNCTIONS.madev = function() {
 		let v, options;
 		[v,options] = getargs([...arguments]);
-		if(options && options.if) v = v.filter(options.if);
+		if(Array.isArray(v[0])) v = v[0];
 		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
 		if(v.length===0) return 0;
-		return math.mad(...v); // need to change to a "reduce" to avoid stack overflows
+		return math.mad(v); // need to change to a "reduce" to avoid stack overflows
 	}
 	for(let key in math) { // need to be more selective about below and change some to "reduce" to avoid stack overflows
 		if(!FUNCTIONS[key] && !["chain","clone","config","compile","createUnit","emit","eval","false","forEach","format","index","Infinity","import","json","matrix","NaN","print","help","map","null","parse","parser","range","sparse","true","typed","typeof","var"].includes(key)) {
