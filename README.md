@@ -82,27 +82,21 @@ We have a lot to document .... bear with us.
     <tr><td>sum</td><td>=sum([1,2,3,3,4,5,6])</td><td>24</td></tr>
 
   <tr><th colspan='3' align='left'>Matrix Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>
-
       <tr><td>difference</td><td>=difference([1,2,3],1)</td><td>[0,1,2]</td></tr>
       <tr><td>difference</td><td>=difference([1,2,3],[1,2,3])</td><td>[0,0,0]</td></tr>
       <tr><td>difference</td><td>=difference([1,2,3],[1,2,3],1)</td><td>[-1,-1,-1]</td></tr>
-
       <tr><td>product</td><td>=product([1,2,3],1)</td><td>[1,2,3]</td></tr>
       <tr><td>product</td><td>=product([[1,2,3], [1,2,3]],[[1,2], [1,2],[1,2]])</td><td>[[6,12],[6,12]]</td></tr>
       <tr><td>product</td><td>=product([1,2,3],[1,2,3],1)</td><td>[1,4,9]</td></tr>
-
       <tr><td>dotProduct</td><td>=dotProduct([1,2,3],1)</td><td>[1,2,3]</td></tr>
       <tr><td>dotProduct</td><td>=dotProduct([1,2,3], [1,2,3])</td><td>[1,4,9]</td></tr>
       <tr><td>dotProduct</td><td>=dotProduct([1,2,3], [1,2,3],2)</td><td>[2,8,18]</td></tr>
-
       <tr><td>quotient</td><td>=quotient([1,2,3],1)</td><td>[1,2,3]</td></tr>
       <tr><td>quotient</td><td>=quotient([[1,2,3], [1,2,3]],[[1,2], [1,2],[1,2]])</td><td>[[6,12],[6,12]]</td></tr>
       <tr><td>quotient</td><td>=quotient([1,2,3],[1,2,3],1)</td><td>[1,4,9]</td></tr>
-
       <tr><td>dotQuotient</td><td>=dotQuotient([1,2,3],1)</td><td>[1,2,3]</td></tr>
       <tr><td>dotQuotient</td><td>=dotQuotient([1,2,3], [1,2,3])</td><td>[1,1,1]</td></tr>
       <tr><td>dotQuotient</td><td>=dotQuotient([1,2,3], [1,2,3],2)</td><td>[0.5,0.5,0.5]</td></tr>
-
       <tr><td>sum</td><td>=sum([1,2,3],1)</td><td>[2,3,4]</td></tr>
       <tr><td>sum</td><td>=sum([1,2,3],[1,2,3])</td><td>[2,4,6]</td></tr>
       <tr><td>sum</td><td>=sum([1,2,3],[1,2,3],1)</td><td>[3,5,7]</td></tr>

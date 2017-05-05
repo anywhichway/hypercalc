@@ -36,7 +36,7 @@ describe("<tr><th colspan='3' align='left'>Multi Argument Numeric Functions</th>
 	}
 });
 const arrayFunctions = [["average","mean"],"difference","max","median","min","mode",["product","prod"],["stdev","std"],"sum"];
-describe("<tr><th colspan='3' align='left'>Multi Argument Numeric Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+describe("<tr><th colspan='3' align='left'>Array Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name of arrayFunctions) {
 		const fname = (Array.isArray(name) ? name[0] : name),
 			mname = (Array.isArray(name) ? name[1] : name),
