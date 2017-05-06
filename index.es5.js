@@ -1354,6 +1354,6 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 	}
 	Hypercalc.getArgs = getargs;
 
-	module.exports = Hypercalc;
+	if (typeof module !== "undefined") module.exports = Hypercalc;
 	if (typeof window !== "undefined") window.Hypercalc = Hypercalc;
 }).call(undefined);

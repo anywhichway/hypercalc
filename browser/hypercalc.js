@@ -778,7 +778,7 @@
 	}
 	Hypercalc.getArgs = getargs;
 	
-	module.exports = Hypercalc;
+	if(typeof(module)!=="undefined") module.exports = Hypercalc;
 	if(typeof(window)!=="undefined") window.Hypercalc = Hypercalc;
 	
 }).call(this);
