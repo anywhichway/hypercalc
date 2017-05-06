@@ -1,5 +1,5 @@
 if(typeof(module)==="object") {
-	Hypercalc = require("../index.js");
+	Hypercalc = require("../../index.js");
 }
 
 const hc = new Hypercalc(),

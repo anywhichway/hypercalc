@@ -156,6 +156,27 @@ describe("<tr><th colspan='3' align='left'>Matrix Functions</th></tr><tr><th ali
 		});
 	});
 	describe("",function() {
+		let fname = "remainder",
+			formula = "="+fname+"([1,2,3],1)",
+			result = [0,1,2],
+			title = "<tr><td>" + fname + "</td><td>" + formula + "</td><td>" + (Array.isArray(result) ? JSON.stringify(result) : result) + "</td></tr>";
+		it(title,function(done) {
+			hc.Cell(fname+"1",formula,{oncalculated:(cell) => { done(assert.equal(JSON.stringify(cell.value),JSON.stringify(result)));  }});
+		});
+		formula = "="+fname+"([1,2,3],[1,2,3])";
+		result = [0,0,0];
+		title = "<tr><td>" + fname + "</td><td>" + formula + "</td><td>" + (Array.isArray(result) ? JSON.stringify(result) : result) + "</td></tr>";
+		it(title,function(done) {
+			hc.Cell(fname+"2",formula,{oncalculated:(cell) => { done(assert.equal(JSON.stringify(cell.value),JSON.stringify(result))); }});
+		});
+		formula = "="+fname+"([1,2,3],[1,2,3],1)";
+		result = [-1,-1,-1];
+		title = "<tr><td>" + fname + "</td><td>" + formula + "</td><td>" + (Array.isArray(result) ? JSON.stringify(result) : result) + "</td></tr>";
+		it(title,function(done) {
+			hc.Cell(fname+"3",formula,{oncalculated:(cell) => { done(assert.equal(JSON.stringify(cell.value),JSON.stringify(result))); }});
+		});
+	});
+	describe("",function() {
 		let fname = "sum",
 			formula = "="+fname+"([1,2,3],1)",
 			result = [2,3,4],
@@ -208,26 +229,10 @@ intersection
 maxa
 mina
 producta
-dotProduct
 quotient
 quotienta
-dotQuotient
 suma
 type
-on
-off
-once
-emit
-expression
-create
-bignumber
-boolean
-complex
-fraction
-number
-string
-unit
-splitUnit
 speedOfLight
 gravitationConstant
 planckConstant
@@ -292,9 +297,6 @@ usolve
 add
 cbrt
 divide
-dotDivide
-dotMultiply
-dotPow
 exp
 fix
 gcd
