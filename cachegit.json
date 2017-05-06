@@ -1,0 +1,7 @@
+{
+"account": "anywhichway",
+"repository":"hypercalc",
+"files": [
+	"browser/hypercalc.es5.js"
+	]
+}
