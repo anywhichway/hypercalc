@@ -26,7 +26,8 @@
 */
 (function() {
 	"use strict"
-	if(typeof(math)==="undefined") {
+	var math;
+	if(typeof(math)==="undefined" && typeof(require)!=="undefined") {
 		math = require("mathjs/dist/math.min.js");
 	}
 
