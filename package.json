@@ -5,8 +5,8 @@
   "engines": {},
   "license": "AGPLv3",
   "scripts": {
-  	"prepublish": "browserify index.js -o browser/hypercalc.js",
-  	"test": "mocha test/index.js"
+    "prepublish": "browserify index.js -o browser/hypercalc.js",
+    "test": "mocha test/index.js"
   },
   "repository": {
     "type": "git",
@@ -21,7 +21,8 @@
   },
   "homepage": "https://github.com/anywhichway/hypercalc#readme",
   "devDependencies": {
-  	"console-time": "^1.0.9"
+    "cachegit": "0.0.5",
+    "console-time": "^1.0.9"
   },
   "dependencies": {
     "mathjs": "^3.12.2"

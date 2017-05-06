@@ -26,7 +26,10 @@
 */
 (function() {
 	"use strict"
-	const math = require("mathjs/dist/math.min.js");
+	var math;
+	if(typeof(math)==="undefined") {
+		math = require("mathjs/dist/math.min.js");
+	}
 
 	function intersection() {
 		const args = [].slice.call(arguments).sort((a,b) => a.length - b.length),
@@ -115,6 +118,7 @@
 		let CURRENTCELL, DECLARATIONS;
 		me.options = Object.assign({},options);
 		me.calculating = 0;
+		Object.defineProperty(me,"oncalculated",{enumerable:false,configurable:true,writable:true,value:options.oncalculated});
 		
 		const declarations = () => {
 			const keys = Object.keys(FUNCTIONS);
@@ -551,8 +555,8 @@
 				!me.options.oncalculated || me.options.oncalculated(me);
 				me.engine.calculating--;
 				me.calculating = null;
-				if(!me.engine.calculating && me.engine.options.oncalculated) {
-					 me.engine.options.oncalculated(me.engine);
+				if(!me.engine.calculating && me.engine.oncalculated) {
+					 me.engine.oncalculated(me.engine);
 				}
 			}
 			if(!me.calculating){

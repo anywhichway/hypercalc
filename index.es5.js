@@ -43,7 +43,10 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 (function () {
 	"use strict";
 
-	var math = require("mathjs/dist/math.min.js");
+	var math;
+	if (typeof math === "undefined") {
+		math = require("mathjs/dist/math.min.js");
+	}
 
 	function intersection() {
 		var args = [].slice.call(arguments).sort(function (a, b) {
@@ -416,6 +419,8 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 			return v[0][0];
 		};
 		FUNCTIONS.format = function () {
+			var _math;
+
 			var v = void 0,
 			    options = void 0;
 
@@ -427,7 +432,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 			options = _getargs16[1];
 
 			if (options && options.if) v = v.filter(options.if);
-			return math.format.apply(math, _toConsumableArray(v).concat([options]));
+			return (_math = math).format.apply(_math, _toConsumableArray(v).concat([options]));
 		};
 		FUNCTIONS.intersection = function () {
 			var v = void 0,
@@ -599,6 +604,8 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 			});
 		};
 		FUNCTIONS.producta = function () {
+			var _math2;
+
 			var v = void 0,
 			    options = void 0;
 
@@ -624,7 +631,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 			traverse(v, function (item, i, array) {
 				return array[i] = coerce(item, { replace: options });
 			});
-			if (Array.isArray(v[0])) return math.multiply.apply(math, _toConsumableArray(v));
+			if (Array.isArray(v[0])) return (_math2 = math).multiply.apply(_math2, _toConsumableArray(v));
 			return v.reduce(function (accumulator, current) {
 				return accumulator * current;
 			}, 1);
@@ -816,6 +823,8 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 			}, 0);
 		};
 		FUNCTIONS.type = function () {
+			var _math3;
+
 			var v = void 0,
 			    options = void 0;
 
@@ -826,7 +835,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 			v = _getargs52[0];
 			options = _getargs52[1];
 
-			return math.typeof.apply(math, _toConsumableArray(v));
+			return (_math3 = math).typeof.apply(_math3, _toConsumableArray(v));
 		};
 		FUNCTIONS.variance = function () {
 			var v = void 0,
@@ -891,6 +900,8 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 			if (!FUNCTIONS[key] && !["bignumber", "boolean", "chain", "clone", "config", "compile", "complex", "create", "createUnit", "emit", "eval", "expression", "false", "forEach", "format", "fraction", "index", "Infinity", "import", "json", "matrix", "NaN", "number", "on", "off", "once", "print", "help", "map", "null", "parse", "parser", "range", "sparse", "splitUnit", "string", "true", "typed", "typeof", "unit", "var"].includes(key)) {
 				if (typeof math[key] === "function") {
 					FUNCTIONS[key] = function () {
+						var _math4;
+
 						var v = void 0,
 						    options = void 0;
 
@@ -902,7 +913,7 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 						options = _getargs60[1];
 
 						if (options && options.if) v = v.filter(options.if);
-						return math[key].apply(math, _toConsumableArray(v));
+						return (_math4 = math)[key].apply(_math4, _toConsumableArray(v));
 					};
 				} else {
 					FUNCTIONS[key.toLowerCase()] = function () {
