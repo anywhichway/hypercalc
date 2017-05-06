@@ -43,7 +43,6 @@ function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr
 (function () {
 	"use strict";
 
-	var math;
 	if (typeof math === "undefined") {
 		math = require("mathjs/dist/math.min.js");
 	}
