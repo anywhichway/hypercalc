@@ -99,8 +99,13 @@ const multiuseFunctions = {
 }
 describe("<tr><th colspan='3' align='left'>Multiuse Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name in multiuseFunctions) {
-		const formula = "="+multiuseFunctions[name].name+"(..." + JSON.stringify(multiuseFunctions[name].arguments) + ")",
-			result = JSON.stringify(multiuseFunctions[name].expect),
+		let formula = "="+multiuseFunctions[name].name+"(";
+			for(let i=0;i<multiuseFunctions[name].arguments.length;i++) {
+				formula += JSON.stringify(multiuseFunctions[name].arguments[i]);
+				if(i<multiuseFunctions[name].arguments.length-1) formula += ",";
+			}
+			formula += ")";
+		const result = JSON.stringify(multiuseFunctions[name].expect),
 			title = "<tr><td>" + multiuseFunctions[name].name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
 		it(title,function(done) {
 			hc.Cell(name,formula,{oncalculated:(cell) => {  done(assert.equal(JSON.stringify(cell.value),result)); }});
