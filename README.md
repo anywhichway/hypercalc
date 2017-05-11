@@ -6,7 +6,7 @@ A multi-dimensional, headless JavaScript spreadsheet for the browser or Node.js.
 2. Zero dependencies.
 3. Multi-dimensional ranges can be flattened for operations like sum and product or left as arrays to support vector and matrix operations.
 4. Single, two, three, and n-dimensional ranges can be created and updated through the use of wildcard matching. No need to modify formulas every time a new sheet is addded.
-5. Extensible with custom functions with as little as one line of code per function.
+5. Extensible with custom functions in as little as one line of code per function.
 
 # Why Hypercalc
 
