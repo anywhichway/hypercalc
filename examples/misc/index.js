@@ -79,7 +79,7 @@ hc.Cell("Test53","=sum([1,2,3,4,5,6])",{oncalculated:cell => console.log("Test53
 
 //--stack_size
 
-const cell = hc.Cell("Total","=sum(varg($('0:999.0:999')))");
+const cell = hc.Cell("Total","=sum($('0:999.0:999'))");
 if(typeof(fete)!=="undefined") fete.mvc(cell,"#app",null);
 console.time("build");
 const dim = 100;

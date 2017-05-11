@@ -1,57 +1,81 @@
 if(typeof(module)==="object") {
-	math = require("mathjs");
-	Hypercalc = require("../index.js");
+	Hypercalc = require("../src/index.js");
 	assert = require("assert");
 }
 
 const hc = new Hypercalc();
 
-
-const unaryArithmeticFunctions = {
+const arithmeticFunctions = {
+		abs: {arguments: [-3.5], expect: 3.5},
 		ceil: Math.ceil(3.5),
 		cube: 3.5 * 3.5 * 3.5,
+		exp: Math.exp(3.5),
 		floor: Math.floor(3.5),
+		nthRoot: {arguments: [3.5,2], expect:Math.pow(3.5,1/2)},
 		round: Math.round(3.5),
 		sqrt: Math.sqrt(3.5),
 		square: 3.5 * 3.5,
 }
 describe("<tr><th colspan='3' align='left'>Arithmetic Unary Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
-	for(let name in unaryArithmeticFunctions) {
-		const formula = "="+name+"(" + (typeof(unaryArithmeticFunctions[name])==="object" ? unaryArithmeticFunctions[name].argument : 3.5) + ")",
-			result = (typeof(unaryArithmeticFunctions[name])==="object" ? unaryArithmeticFunctions[name].expect : unaryArithmeticFunctions[name]),
+	for(let name in arithmeticFunctions) {
+		const arguments = (arithmeticFunctions[name].arguments ? arithmeticFunctions[name].arguments : [3.5]);
+		let formula = "="+name+"(";
+			for(let i=0;i<arguments.length;i++) {
+				formula += JSON.stringify(arguments[i]);
+				if(i<arguments.length-1) formula += ",";
+			}
+			formula += ")";
+		const result = (typeof(arithmeticFunctions[name])==="object" ? arithmeticFunctions[name].expect : arithmeticFunctions[name]),
 			title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
 		it(title,function(done) {
 			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value,result)); }});
 		})
 	}
 });
+
+const geometryFunctions = {
+		distance: {arguments: [[1,2],[1,4]], expect: Math.sqrt(Math.pow(1-1,2)+Math.pow(4-2,2))}
+}
+describe("<tr><th colspan='3' align='left'>Geometry Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+	for(let name in geometryFunctions) {
+		const arguments = (geometryFunctions[name].arguments ? geometryFunctions[name].arguments : [3.5]);
+		let formula = "="+name+"(";
+			for(let i=0;i<arguments.length;i++) {
+				formula += JSON.stringify(arguments[i]);
+				if(i<arguments.length-1) formula += ",";
+			}
+			formula += ")";
+		const result = (typeof(geometryFunctions[name])==="object" ? geometryFunctions[name].expect : geometryFunctions[name]),
+			title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
+		it(title,function(done) {
+			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value,result)); }});
+		})
+	}
+});
+
+
 const multiuseFunctions = {
-		numericDifference: {
-			name: "remainder",
-			arguments: [[1,2,3,3,4,5,6]],
-			expect: 1 - 2 - 3 - 3 - 4 - 5 - 6
+		numericAverage: {
+			name: "average",
+			arguments: [1,2,3],
+			expect: 2
 		},
-		vectorcDifference: {
-			name: "remainder",
-			arguments: [[1,2,3,3,4,5,6],1],
-			expect: [0,1,2,2,3,4,5]
-		},
-		gridDifference: {
-			name: "remainder",
-			arguments: [[1,2],[1,2],[1,2]],
-			expect: [-1,-2]
+		vectorAverage: {
+			name: "average",
+			arguments: [[1,2],[2,3],[3,4]],
+			expect: [2,3]
 		},
 		numericProduct: {
 			name: "product",
 			arguments: [[1,2,3,3,4,5,6]],
 			expect: 1 * 2 * 3 * 3 * 4 * 5 * 6
 		},
-		vectorProduct: {
+		vectorScalarProduct: {
 			name: "product",
 			arguments: [[1,2,3,3,4,5,6],2],
 			expect: [2,4,6,6,8,10,12]
 		},
-		gridProduct: {
+		vectorProduct: {
 			name: "product",
 			arguments: [[1,2],[1,2],[1,2]],
 			expect: [1,8]
@@ -71,12 +95,12 @@ const multiuseFunctions = {
 			arguments: [[1,2,3,3,4,5,6]],
 			expect: 1 / 2 / 3 / 3 / 4 / 5 / 6
 		},
-		vectorQuotient: {
+		vectorScalarQuotient: {
 			name: "quotient",
 			arguments: [[1,2,3,3,4,5,6],2],
 			expect: [1/2,2/2,3/2,3/2,4/2,5/2,6/2]
 		},
-		gridQuotient: {
+		vectorQuotient: {
 			name: "quotient",
 			arguments: [[1,2],[1,2],[1,2]],
 			expect: [1,.5]
@@ -86,12 +110,27 @@ const multiuseFunctions = {
 			arguments: [[1,2,3,3,4,5,6]],
 			expect: 24
 		},
+		numericDifference: {
+			name: "remainder",
+			arguments: [[1,2,3,3,4,5,6]],
+			expect: 1 - 2 - 3 - 3 - 4 - 5 - 6
+		},
+		vectorScalarDifference: {
+			name: "remainder",
+			arguments: [[1,2,3,3,4,5,6],1],
+			expect: [0,1,2,2,3,4,5]
+		},
+		vectorDifference: {
+			name: "remainder",
+			arguments: [[1,2],[1,2],[1,2]],
+			expect: [-1,-2]
+		},
 		vectorSum: {
 			name: "sum",
 			arguments: [[1,2,3,3,4,5,6],2],
 			expect: [3,4,5,5,6,7,8]
 		},
-		gridSum: {
+		vectorSum: {
 			name: "sum",
 			arguments: [[1,2],[1,2],[1,2]],
 			expect: [3,6]
@@ -112,16 +151,52 @@ describe("<tr><th colspan='3' align='left'>Multiuse Functions</th></tr><tr><th a
 		})
 	}
 });
+const matrixFunctions = {
+		matrixProductAB: {
+			name: "product",
+			arguments: [[[1,2,3]],[[1],[2],[3]]],
+			expect: [[14]]
+		},
+		matrixProductBA: {
+			name: "product",
+			arguments: [[[1],[2],[3]],[[1,2,3]]],
+			expect: [[1,2,3],[2,4,6],[3,6,9]]
+		}
+}
+describe("<tr><th colspan='3' align='left'>Matrix Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+	for(let name in matrixFunctions) {
+		let formula = "="+matrixFunctions[name].name+"(";
+			for(let i=0;i<matrixFunctions[name].arguments.length;i++) {
+				formula += JSON.stringify(matrixFunctions[name].arguments[i]);
+				if(i<matrixFunctions[name].arguments.length-1) formula += ",";
+			}
+			formula += ")";
+		const result = JSON.stringify(matrixFunctions[name].expect),
+			title = "<tr><td>" + matrixFunctions[name].name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
+		it(title,function(done) {
+			hc.Cell(name,formula,{oncalculated:(cell) => {  done(assert.equal(JSON.stringify(cell.value),result)); }});
+		})
+	}
+});
 const probabiltycFunctions = {
-		factorial: {arguments: [4],expect: 1* 2 * 3 *4},
+	factorial: {name:"factorial", arguments: [4],expect: 1* 2 * 3 *4},
+	randomFloat: {name:"random", arguments: [],expect: arg => arg>=0 && arg<=1  },
+	randomInt: {name:"random", arguments: [1,2],expect: arg => arg>=1 && arg<=2 },
 }
 describe("<tr><th colspan='3' align='left'>Probability Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name in probabiltycFunctions) {
-		const formula = "="+name+"(..." + JSON.stringify(probabiltycFunctions[name].arguments) + ")",
-			result = probabiltycFunctions[name].expect,
+		let formula = "="+probabiltycFunctions[name].name+"(";
+		for(let i=0;i<probabiltycFunctions[name].arguments.length;i++) {
+			formula += JSON.stringify(probabiltycFunctions[name].arguments[i]);
+			if(i<probabiltycFunctions[name].arguments.length-1) formula += ",";
+		}
+		formula += ")";
+		const result = probabiltycFunctions[name].expect,
 			title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
 		it(title,function(done) {
-			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value,result)); }});
+			hc.Cell(name,formula,{oncalculated:(cell) => { 
+				done(typeof(result)==="function" ? assert(result(cell.value)) : assert.equal(cell.value,result)); 
+			}});
 		})
 	}
 });
@@ -133,7 +208,7 @@ const statisticalFunctions = {
 		mode: [3],
 		stdev: 1.871,
 		variance: 3.5,
-		mad: 1.5
+		madev: 1.5
 }
 describe("<tr><th colspan='3' align='left'>Statistical Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name in statisticalFunctions) {
@@ -158,22 +233,63 @@ describe("<tr><th colspan='3' align='left'>Trigonometry Functions</th></tr><tr><
 		})
 	}
 });
+
 const vectorFunctions = {
+		vectorAverage: {
+			name: "average",
+			arguments: [[1,2,3],[2,3,1],[3,1,2]],
+			expect: [2,2,2]
+		},
+		vectorDifference: {
+			name: "difference",
+			arguments: [[1,2],[2,1],[1,1]],
+			expect: [-2,0]
+		},
 		dotProduct: {
 			name: "dotProduct",
 			arguments: [[1,2,3],[1,2,3]],
 			expect: 14
 		},
-		dotDivided: {
-			name: "dotDivided",
-			arguments: [[1,2,3],[1,2,3]],
-			expect: 3
+		vectorProduct: {
+			name: "product",
+			arguments: [[1,2],[2,1],[2,2]],
+			expect: [4,4]
+		},
+		vectorProductScalar: {
+			name: "product",
+			arguments: [[1,2],2],
+			expect: [2,4]
+		},
+		vectorQuotient: {
+			name: "quotient",
+			arguments: [[2,8],[2,4],[2,2]],
+			expect: [.5,1]
+		},
+		vectorQuotientScalar: {
+			name: "quotient",
+			arguments: [[1,2],2],
+			expect: [.5,1]
+		},
+		vectorSum: {
+			name: "sum",
+			arguments: [[1,2],[2,1],[1,1]],
+			expect: [4,4]
+		},
+		vectorSumScalar: {
+			name: "sum",
+			arguments: [[1,2,3],1],
+			expect: [2,3,4]
 		}
 }
 describe("<tr><th colspan='3' align='left'>Vector Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name in vectorFunctions) {
-		const formula = "="+vectorFunctions[name].name+"(..." + JSON.stringify(vectorFunctions[name].arguments) + ")",
-			result = JSON.stringify(vectorFunctions[name].expect),
+		let formula = "="+vectorFunctions[name].name+"(";
+			for(let i=0;i<vectorFunctions[name].arguments.length;i++) {
+				formula += JSON.stringify(vectorFunctions[name].arguments[i]);
+				if(i<vectorFunctions[name].arguments.length-1) formula += ",";
+			}
+			formula += ")";
+		const result = JSON.stringify(vectorFunctions[name].expect),
 			title = "<tr><td>" + vectorFunctions[name].name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
 		it(title,function(done) {
 			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(JSON.stringify(cell.value),result)); }});

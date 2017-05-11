@@ -38,55 +38,58 @@ const genId = () => (Math.random()+"").substring(2),
 				} else throw(e); } } }
 		return parse($,model);
 	}`,
+	activateProperty = (object,property) => {
+		const viewmap = object.__views__;
+		if(!viewmap) { activate(object); return; }
+		const getter =  function() {
+			const value = (desc.get ? desc.get.call(object) : desc.value);
+			if( typeof(value)!=="function") {
+				let views = viewmap.get(property);
+				if(!views) {
+					views = new Set();
+					viewmap.set(property,views)
+				}
+				views.add(CURRENTVIEW);
+			}
+			return value;
+		}
+		getter.feteActivated = true;
+		const desc = Object.getOwnPropertyDescriptor(object,property);
+		if(desc.get && desc.get.feteAcivated) return;
+		Object.defineProperty(object,property,{
+			enumerable:desc.enumerable,
+			get: getter,
+			set: function(value) {
+				const me = this;
+				value = activate(value);
+				if(desc.set) desc.set.call(object,value);
+				else if(desc.writable) desc.value = value;
+				const views = viewmap.get(property);
+				!views || views.forEach((view) => {
+					if(view && (view.parentElement || view.ownerElement)) {
+						view.model || view.use(me);
+						view.render();
+					}
+					else views.delete(view); // garbage collect
+				});
+				return true;
+			}
+		});
+	},
 	activate = object => {
 		if(typeof(object)!=="object" || !object || object.__views__) return object;
 		if(Array.isArray(object)) {
 			//for(let i=0;i<object.length;i++) object[i] = activate(item[i]);
 			// elements are activated on get for performance reasons
+			// should we return a Proxy here that will support trapping of new elements and activating??
 		}
 		else {
 			const viewmap = new Map();
 			Object.defineProperty(object,"__views__",{enumerable:false,get:function() { return viewmap; },set: function() {}});
 			Object.keys(object).forEach(property => { 
 				object[property] = activate(object[property]);
-				const desc = Object.getOwnPropertyDescriptor(object,property);
-				Object.defineProperty(object,property,{
-					enumerable:desc.enumerable,
-					get: function() {
-						//const value = (Array.isArray(target) ? activate(target[property]) : target[property]);
-						const value = (desc.get ? desc.get.call(object) : desc.value);
-						if( typeof(value)!=="function") {
-							let views = viewmap.get(property);
-							if(!views) {
-								views = new Set();
-								viewmap.set(property,views)
-							}
-							views.add(CURRENTVIEW);
-						}
-						return value;
-					},
-					set: function(value) {
-						const me = this;
-						value = activate(value);
-						if(desc.set) desc.set.call(object,value);
-						else if(desc.writable) desc.value = value;
-						//if(this[property]!==value) {
-							//this[property] = value;
-							const views = viewmap.get(property);
-							!views || views.forEach((view) => {
-								if(view && (view.parentElement || view.ownerElement)) {
-									view.model || view.use(me);
-									view.render();
-								}
-								else views.delete(view); // garbage collect
-							});
-						//}
-						
-						return true;
-					}
-				});
+				activateProperty(object,property);
 			});
-			
 		}
 		return object;
 	},
@@ -388,6 +391,8 @@ class Fete {
 					} else if(me.type==="select-multiple") {
 						model[me.property]=[];
 					}
+					// since the property may have been undefined, activate it (no-op if already activated)
+					activateProperty(model,me.property);
 				}
 			}
 			if(me.interpolated) {

@@ -1,4 +1,589 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		isNumber = require("./isNumber.js"),
+		isVector = require("./isVector.js"),
+		vectorAverage = require("./vectorAverage.js");
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length>1 && v.every(arg => isVector(arg))) return vectorAverage(...arguments);
+		else if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return Infinity;
+		let count = 0;
+		return v.reduce((accumulator,current) => {
+			if(typeof(current)==="number") {
+				accumulator += current;
+				count++;
+			}
+			return accumulator;
+		},0) / count;
+	}
+}).call(this);
+},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16,"./vectorAverage.js":40}],2:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js");
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		return v.length;
+	}
+}).call(this);
+},{"../getArgs.js":45}],3:[function(require,module,exports){
+(function() {
+	module.exports = value => value * value * value;
+}).call(this);
+},{}],4:[function(require,module,exports){
+(function() {
+	function array_equals(a, b)
+	{
+	  return a.length === b.length && a.every(function(value, index) {
+	    return value === b[index];
+	  });
+	};
+
+	function getdim(arr)
+	{
+	  if (!Array.isArray(arr)) {
+	    return []; // current array has no dimension
+	  }
+	  var dim = arr.reduce(function(result, current) {
+	    // check each element of arr against the first element
+	    // to make sure it has the same dimensions
+	    return array_equals(result, getdim(current)) ? result : false;
+	  }, getdim(arr[0]));
+
+	  // dim is either false or an array
+	  return dim && [arr.length].concat(dim);
+	}
+	module.exports = getdim;
+}).call(this);
+},{}],5:[function(require,module,exports){
+(function() {
+	module.exports = (p1,p2) => Math.sqrt(p1.reduce((accumulator,current,i) => accumulator += Math.pow(p2[i]-p1[i],2),0));
+}).call(this);
+},{}],6:[function(require,module,exports){
+(function() {
+	module.exports = (a,b,options) => a.map((x,i) => a[i] * b[i]).reduce((m,n) => m + n);
+}).call(this);
+},{}],7:[function(require,module,exports){
+(function() {
+	// change to a variable arg function
+	const equal = (a,b,options) => {
+			if(a===b) return true;
+			if(Array.isArray(a) && Array.isArray(b)) return arrayEqual(a,b,options);
+		},
+		arrayEqual = (a,b,options) => {
+			return a.length===b.length && a.every((item,i) => equal(item,b[i],options));
+		};
+	module.exports = equal;
+}).call(this);
+},{}],8:[function(require,module,exports){
+(function() {
+	module.exports =  v => {
+		let result = 1;
+		v = Math.round(v);
+		while(v) result *= v--;
+		return result;
+	}
+}).call(this);
+},{}],9:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js");
+	function intersection() {
+		const args = [].slice.call(arguments).sort((a,b) => a.length - b.length),
+	    	intersection = new Set(args[0]);
+	    for(let elem of intersection) {
+	    	for(let i=1;i<args.length;i++) {
+		    	if(!args[i].includes(elem)) {
+		    		intersection.delete(elem);
+		    		break;
+		    	}
+		    }
+	    }
+	    return [...intersection];
+	}
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===0) return [];
+		const result = intersection(...v);
+		if(options && options.if) return result.filter(options.if);
+		return result;
+	}
+}).call(this);
+},{"../getArgs.js":45}],10:[function(require,module,exports){
+(function() {
+	module.exports = data => typeof(data)==="function";
+}).call(this);
+},{}],11:[function(require,module,exports){
+(function() {
+	module.exports = data => Array.isArray(data) && Array.isArray(data[0]) && Array.isArray(data[data.length-1]);
+}).call(this);
+},{}],12:[function(require,module,exports){
+(function() {
+	module.exports = value => value < 0;
+}).call(this);
+},{}],13:[function(require,module,exports){
+(function() {
+	module.exports = data => typeof(data)==="number";
+}).call(this);
+},{}],14:[function(require,module,exports){
+(function() {
+	module.exports = value => value > 0;
+}).call(this);
+},{}],15:[function(require,module,exports){
+(function() {
+	module.exports = num => {
+	    for(let i = 2, s = Math.sqrt(num); i <= s; i++)
+	        if(num % i === 0) return false; 
+	    return num !== 1;
+	}
+}).call(this);
+},{}],16:[function(require,module,exports){
+(function() {
+	module.exports = data => Array.isArray(data) && !Array.isArray(data[0]) && !Array.isArray(data[data.length-1]);
+}).call(this);
+},{}],17:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		sum = args => (!args.length ? 0 : args.reduce((accumulator,current) => accumulator + current)),
+		mean = args => (!args.length ? Infinity :  sum(args) / args.length),
+		mad = args => {
+			const m = mean(args);
+			return mean(args.map(num => Math.abs(num - m)));
+		};
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		if(options && options.if) v = v.filter(options.if);
+		return mad(v);
+	}
+}).call(this);
+},{"../getArgs.js":45}],18:[function(require,module,exports){
+(function() {
+	const difference = (a,b) => a.map((x,i) => a[i] - b[i]);
+	module.exports = function() {
+		return [].slice.call(arguments,0).reduce((accumulator,current) => accumulator.map((x,i) => difference(x,current[i])));
+	}
+}).call(this);
+},{}],19:[function(require,module,exports){
+(function() {
+	const transpose = require("./transpose.js"),
+		dotProduct = require("./dotProduct.js");
+	module.exports = (a,b) => a.map((x,i) => transpose(b).map((y,k) => dotProduct(x, y)));
+}).call(this);
+},{"./dotProduct.js":6,"./transpose.js":37}],20:[function(require,module,exports){
+(function() {
+	const sum = (a,b) => a.map((x,i) => a[i] + b[i]);
+	module.exports = function() {
+		return [].slice.call(arguments,0).reduce((accumulator,current) => accumulator.map((x,i) => sum(x,current[i])));
+	}
+}).call(this);
+},{}],21:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js");
+	module.exports = function()  {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return -Infinity;
+		return v.reduce((accumulator,current) => Math.max(accumulator,current));
+	}
+}).call(this);
+},{"../getArgs.js":45}],22:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js");
+	function median(args) {
+		if (!args.length) return 0;
+		const numbers = args.sort((a,b) => a - b),
+			middle = Math.floor(numbers.length / 2),
+			isEven = numbers.length % 2 === 0;
+		return isEven ? (numbers[middle] + numbers[middle - 1]) / 2 : numbers[middle];
+	}
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		if(options && options.if) v = v.filter(options.if);
+		return median(v);
+	}
+}).call(this);
+},{"../getArgs.js":45}],23:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js");
+	module.exports = function()  {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return Infinity;
+		return v.reduce((accumulator,current) => Math.min(accumulator,current));
+	}
+}).call(this);
+},{"../getArgs.js":45}],24:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js");
+	function mode(args) {
+		if (!args.length) return [];
+		const modeMap = {};
+		let modes = [],
+			maxCount = 0;
+		for(let val of args) {
+			if (!modeMap[val]) modeMap[val] = 1;
+			else modeMap[val]++;
+
+			if (modeMap[val] > maxCount) {
+				modes = [val];
+				maxCount = modeMap[val];
+			}
+			else if (modeMap[val] === maxCount) {
+				modes.push(val);
+				maxCount = modeMap[val];
+			}
+		}
+		return modes;
+	}
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		if(options && options.if) v = v.filter(options.if);
+		return mode(v);
+	}
+}).call(this);
+},{"../getArgs.js":45}],25:[function(require,module,exports){
+(function() {
+	module.exports = (value,root=2) => Math.pow(value,1/root);
+}).call(this);
+},{}],26:[function(require,module,exports){
+(function() {
+	module.exports = () => (1 + Math.sqrt(5)) / 2;
+}).call(this);
+},{}],27:[function(require,module,exports){
+(function() {
+	module.exports = (x,y) => x ^ y;
+}).call(this);
+},{}],28:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		isNumber = require("./isNumber.js"),
+		isVector = require("./isVector.js"),
+		isMatrix = require("./isMatrix.js"),
+		vectorProduct = require("./vectorProduct.js"),
+		dimensions = require("./dimensions.js"),
+		matrixProduct = require("./matrixProduct.js");
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length>1) {
+			if((v.length===2 && isVector(v[0]) && isNumber(v[1])) || v.every(arg => isVector(arg))) return vectorProduct(...arguments);
+			if(isMatrix(v[0])) {
+				const d1 = dimensions(v[0]),
+					d2 = dimensions(v[1]);
+				if(d1.length>0 && d1[0]===d2[1] || d2[0]===d1[1]) return matrixProduct(...arguments);
+			}
+		}
+		else if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return 0;
+		return v.reduce((accumulator,current) => {
+			if(isNumber(current)) accumulator *= current;
+			return accumulator;
+		},1);
+	}
+}).call(this);
+},{"../getArgs.js":45,"./dimensions.js":4,"./isMatrix.js":11,"./isNumber.js":13,"./isVector.js":16,"./matrixProduct.js":19,"./vectorProduct.js":42}],29:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		isNumber = require("./isNumber.js"),
+		isVector = require("./isVector.js"),
+		vectorQuotient = require("./vectorQuotient.js");
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length>1) {
+			if((v.length===2 && isVector(v[0]) && isNumber(v[1])) || v.every(arg => isVector(arg))) return vectorQuotient(...arguments);
+		}
+		else if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return 0;
+		return v.reduce((accumulator,current) => {
+			if(isNumber(current)) accumulator /= current;
+			return accumulator;
+		},1);
+	}
+}).call(this);
+},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16,"./vectorQuotient.js":43}],30:[function(require,module,exports){
+(function() {
+	const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+	module.exports = function(min,max) {
+		let result;
+		if(arguments.length>=2) result = getRandomInt(min,max);
+		else result = Math.random();
+		return result;
+	}
+}).call(this);
+},{}],31:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		isNumber = require("./isNumber.js"),
+		isVector = require("./isVector.js"),
+		isMatrix = require("./isMatrix.js"),
+		vectorDifference = require("./vectorDifference.js"),
+		matrixDifference = require("./matrixDifference.js"),
+		dimensions = require("./dimensions.js"),
+		equal = require("./equal.js");
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length>1) {
+			if((v.length===2 && isVector(v[0]) && isNumber(v[1])) || v.every(arg => isVector(arg))) return vectorDifference(...arguments);
+			if(isMatrix(v[0])) {
+				const d = dimensions(v[0]);
+				if(v.every((item,i) => i===0 || (isMatrix(item) && equal(d,dimensions(item))))) return matrixDifference(...arguments);
+			}
+		}
+		else if(v.length===1) v = v[0];
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return Infinity;
+		return v.reduce((accumulator,current) => {
+			if(typeof(current)==="number") {
+				accumulator -= current;
+			}
+			return accumulator;
+		});
+	}
+}).call(this);
+},{"../getArgs.js":45,"./dimensions.js":4,"./equal.js":7,"./isMatrix.js":11,"./isNumber.js":13,"./isVector.js":16,"./matrixDifference.js":18,"./vectorDifference.js":41}],32:[function(require,module,exports){
+(function() {
+	const isNumber = require("./isNumber.js");
+	module.exports = value => (isNumber(value) ? (value > 0 ? 1 : (value ===0 ? 0 : -1)) : undefined);
+}).call(this);
+},{"./isNumber.js":13}],33:[function(require,module,exports){
+(function() {
+	module.exports = value => value * value;
+}).call(this);
+},{}],34:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		sum = args => (!args.length ? 0 : args.reduce((accumulator,current) => accumulator + current)),
+		mean = args => (!args.length ? Infinity :  sum(args) / args.length),
+		variance = args => {
+			const m = mean(args);
+			return args.reduce((accumulator, current) => accumulator += Math.pow((current - m), 2),0) / args.length;
+		},
+		stdev = args => (!args.length ? 0 : Math.sqrt(variance(args)));
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return 0;
+		return stdev(v); 
+	}
+}).call(this);
+},{"../getArgs.js":45}],35:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		isNumber = require("./isNumber.js"),
+		isVector = require("./isVector.js"),
+		isMatrix = require("./isMatrix.js"),
+		vectorSum = require("./vectorSum.js"),
+		matrixSum = require("./matrixSum.js"),
+		dimensions = require("./dimensions.js"),
+		equal = require("./equal.js");
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length>1) {
+			if((v.length===2 && isVector(v[0]) && isNumber(v[1])) || v.every(arg => isVector(arg))) return vectorSum(...arguments);
+			if(isMatrix(v[0])) {
+				const d = dimensions(v[0]);
+				if(v.every((item,i) => i===0 || (isMatrix(item) && equal(d,dimensions(item))))) return matrixSum(...arguments);
+			}
+		}
+		else if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return Infinity;
+		return v.reduce((accumulator,current) => {
+			if(typeof(current)==="number") {
+				accumulator += current;
+			}
+			return accumulator;
+		},0);
+	}
+}).call(this);
+},{"../getArgs.js":45,"./dimensions.js":4,"./equal.js":7,"./isMatrix.js":11,"./isNumber.js":13,"./isVector.js":16,"./matrixSum.js":20,"./vectorSum.js":44}],36:[function(require,module,exports){
+(function() {
+	module.exports = () => 2 * Math.PI;
+}).call(this);
+},{}],37:[function(require,module,exports){
+(function() {
+	module.exports = a => a[0].map((x,i) => a.map((y,k) => y[i]));
+}).call(this);
+},{}],38:[function(require,module,exports){
+(function() {
+	module.exports = function(v) {
+		const type = typeof(v);
+		return (v===null || v===undefined ? "undefined" : (Array.isArray(v) ? "Array" : (type==="object" ? v.constructor.name : type)));
+	}
+}).call(this);
+},{}],39:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		sum = args => (!args.length ? 0 : args.reduce((accumulator,current) => accumulator + current)),
+		mean = args => (!args.length ? Infinity :  sum(args) / args.length),
+		variance = args => {
+			const m = mean(args);
+			return args.reduce((accumulator, current) => accumulator += Math.pow((current - m), 2),0) / args.length;
+		};
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		v = v.filter(item => typeof(item)==="number");
+		if(options && options.if) v = v.filter(options.if);
+		if(v.length===0) return 0;
+		return variance(v); 
+	}
+}).call(this);
+},{"../getArgs.js":45}],40:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js");
+	module.exports = function() {
+		let [v,options] = getArgs([].slice.call(arguments,0));
+		const counts = new Array(v[0].length);
+		return v.sort((a,b) => b.length - a.length).reduce((accumulator,current) => current.map((value, i) => { 
+			if(typeof(value)==="number" && (!options || !options.if || options.if(value))) {
+				accumulator[i] = (accumulator[i] || 0) + value;
+				counts[i] = (counts[i] || 0) + 1;
+			}
+			return accumulator[i];
+			}),new Array(v[0].length)).map((value,i) => value /= counts[i]);
+	}
+}).call(this);
+},{"../getArgs.js":45}],41:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		isVector = require("./isVector.js"),
+		isNumber = require("./isNumber.js");
+	module.exports = function() {
+		const [v,options] = getArgs([].slice.call(arguments,0));
+		return v.reduce((accumulator,current) => { 
+			if(isVector(current)) { 
+				current.map((value, i) => { 
+					if(i>=accumulator.length) accumulator[i] = value;
+					else if(typeof(value)==="number" && (!options || !options.if || options.if(value))) accumulator[i] -= value
+					return accumulator[i];
+				});
+			} else if(isNumber(current)) {
+				for(let i=0;i<accumulator.length;i++) accumulator[i] -= current;
+			}
+			return accumulator;
+		});
+	}
+}).call(this);
+},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16}],42:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		isNumber = require("./isNumber.js"),
+		isVector = require("./isVector.js");
+	module.exports = function() {
+		const [v,options] = getArgs([].slice.call(arguments,0));
+		return v.reduce((accumulator,current) => { 
+			if(isVector(current)) {
+				current.map((value, i) => {
+					if(i>=accumulator.length) accumulator[i] = 1;
+					if(typeof(value)==="number" && (!options || !options.if || options.if(value))) accumulator[i] *= value;
+					return accumulator[i];
+					})
+			} else if(isNumber(current)) {
+				for(let i=0;i<accumulator.length;i++) accumulator[i] *= current;
+			}
+			return accumulator;
+		});
+	}
+}).call(this);
+},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16}],43:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		isNumber = require("./isNumber.js"),
+		isVector = require("./isVector.js");
+	module.exports = function() {
+		const [v,options] = getArgs([].slice.call(arguments,0));
+		return v.reduce((accumulator,current) => { 
+			if(isVector(current)) {
+				current.map((value, i) => {
+					if(i>=accumulator.length) accumulator[i] = value;
+					else if(typeof(value)==="number" && (!options || !options.if || options.if(value))) accumulator[i] /= value;
+					return accumulator[i];
+					})
+			} else if(isNumber(current)){
+				for(let i=0;i<accumulator.length;i++) accumulator[i] /= current;
+			}
+			return accumulator;
+		});
+	}
+}).call(this);
+},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16}],44:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		isVector = require("./isVector.js"),
+		isNumber = require("./isNumber.js");
+	module.exports = function() {
+		const [v,options] = getArgs([].slice.call(arguments,0));
+		return v.reduce((accumulator,current) => { 
+			if(isVector(current)) { 
+				current.map((value, i) => { 
+					if(i>=accumulator.length) accumulator[i] = value;
+					else if(typeof(value)==="number" && (!options || !options.if || options.if(value))) accumulator[i] += value
+					return accumulator[i];
+				});
+			} else if(isNumber(current)) {
+				for(let i=0;i<accumulator.length;i++) accumulator[i] += current;
+			}
+			return accumulator;
+		});
+	}
+}).call(this);
+},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16}],45:[function(require,module,exports){
+(function() {
+	function getArgs(args) {
+		getArgs.VARGS = [];
+		const last = args[args.length-1],
+			options = (last && typeof(last)==="object" && !Array.isArray(last) ? last : null);
+		let values = [];
+		!options || (args = args.slice(0,args.length-1));
+		const result = [];
+		for(let i=0;i<args.length;i++) {
+			if(args[i]===getArgs.VARGS) {
+				const varg = getArgs.VARGS.shift();
+				if(Array.isArray(varg)) {
+					for(let arg of varg) result.push(arg)
+				} else {
+					results.push(varg);
+				}
+			}
+			else result.push(args[i]);
+		}
+		return [result,options];
+	}
+	module.exports = getArgs;
+}).call(this);
+},{}],46:[function(require,module,exports){
 /*  AGPLv3.0 License
 * 
 * Hypercalc
@@ -28,96 +613,15 @@
 (function() {
 	"use strict"
 	
-	const dotDivided = (a,b) => a.map((x,i) => a[i] / b[i]).reduce((m,n) => m + n);
-
-	const dotProduct = (a,b) => a.map((x,i) => a[i] * b[i]).reduce((m,n) => m + n);
-	
 	const gridDivide = (a,b) => a.map((x,i) => a[i] / (Array.isArray(b) ? b[i] : b));
 
 	const gridMultiply = (a,b) => a.map((x,i) => a[i] * (Array.isArray(b) ? b[i] : b));
 	
-	function intersection() {
-		const args = [].slice.call(arguments).sort((a,b) => a.length - b.length),
-	    	intersection = new Set(args[0]);
-	    for(let elem of intersection) {
-	    	for(let i=1;i<args.length;i++) {
-		    	if(!args[i].includes(elem)) {
-		    		intersection.delete(elem);
-		    		break;
-		    	}
-		    }
-	    }
-	    return [...intersection];
-	}
 	
-	function mad(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		const m = mean(args);
-		return mean(args.map(num => Math.abs(num - m)));
-	}
-	
-	const mMultiply = (a,b) => a.map((x,i) => transpose(b).map((y,k) => dotProduct(x, y)));
-	
-	const mDivide = (a,b) => a.map((x,i) => transpose(b).map((y,k) => dotDivided(x, y)));
 	
 	const mAdd = (a,b) => a.map((x,i) => a[i] + (Array.isArray(b) ? b[i] || 0 : b));
 
 	const mSubtract = (a,b) => a.map((x,i) => a[i] - (Array.isArray(b) ? b[i] || 0 : b));
-	
-	function mean(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		if (!args.length) return Infinity;
-		return sum(args) / args.length;
-	}
-	
-	function median(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		if (!args.length) return 0;
-		const numbers = args.sort((a,b) => a - b),
-			middle = Math.floor(numbers.length / 2),
-			isEven = numbers.length % 2 === 0;
-		return isEven ? (numbers[middle] + numbers[middle - 1]) / 2 : numbers[middle];
-	}
-	
-	function mode(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		if (!args.length) return [];
-		const modeMap = {};
-		let modes = [],
-			maxCount = 0;
-		for(let val of args) {
-			if (!modeMap[val]) modeMap[val] = 1;
-			else modeMap[val]++;
-
-			if (modeMap[val] > maxCount) {
-				modes = [val];
-				maxCount = modeMap[val];
-			}
-			else if (modeMap[val] === maxCount) {
-				modes.push(val);
-				maxCount = modeMap[val];
-			}
-		}
-		return modes;
-	}
-	
-	function stdev(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		if (!args.length) return 0;
-		return Math.sqrt(variance(args));
-	}
-	
-	function variance(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		const m = mean(args);
-		return mean(args.map(num => Math.pow(num - m, 2)));
-	}
-	
-	function sum(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		if (!args.length) return 0;
-		return args.reduce((accumulator,current) => accumulator + current);
-	}
 	
 	function zscores(args) {
 		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
@@ -125,8 +629,6 @@
 			sd = stdev(args);
 		return args.map(num => (num - m) / sd);
 	}
-	
-	const transpose = a => a[0].map((x,i) => a.map((y,k) => y[i]));
 	
 	const traverse = (matrix,callback) => {
 		for(let i=0;i<matrix.length;i++) {
@@ -195,24 +697,68 @@
 		});
 	}
 	
+	const FUNCTIONS = {};
+	
 	function Hypercalc(options={}) {
-		const me = this,
-			FUNCTIONS = {};
+		const me = this;
 		let CURRENTCELL, DECLARATIONS;
 		me.options = Object.assign({},options);
 		me.calculating = 0;
 		Object.defineProperty(me,"oncalculated",{enumerable:false,configurable:true,writable:true,value:options.oncalculated});
 		
-		const declarations = () => {
-			const keys = Object.keys(FUNCTIONS);
-			let str = "const ";
-			keys.forEach((key,i) => {
-				str += key + "=functions['"+key+"']";
-				if(i<keys.length-1) str += ",";
-			});
-			str += ";"
-			return str;
-		}
+		FUNCTIONS.average = require("./functions/average.js");
+		FUNCTIONS.count = require("./functions/count.js");
+		FUNCTIONS.cube = require("./functions/cube.js");
+		
+		FUNCTIONS.dimensions = require("./functions/dimensions.js");
+		FUNCTIONS.distance = require("./functions/distance.js");
+		
+		FUNCTIONS.dotProduct = require("./functions/dotProduct.js");
+		
+		FUNCTIONS.equal = require("./functions/equal.js");
+		
+		FUNCTIONS.factorial = require("./functions/factorial.js");
+		FUNCTIONS.intersection = require("./functions/intersection.js");
+		
+		FUNCTIONS.isFunction = require("./functions/isFunction.js");
+		FUNCTIONS.isMatrix = require("./functions/isMatrix.js");
+		FUNCTIONS.isNegative = require("./functions/isNegative.js");
+		FUNCTIONS.isNumeric = FUNCTIONS.isNumber = require("./functions/isNumber.js");
+		FUNCTIONS.isPositive = require("./functions/isPositive.js");
+		FUNCTIONS.isPrime = require("./functions/isPrime.js");
+		FUNCTIONS.isVector = require("./functions/isVector.js");
+		
+		FUNCTIONS.madev = require("./functions/madev.js");
+		
+		FUNCTIONS.matrixDifference = require("./functions/matrixDifference.js");
+		FUNCTIONS.matrixProduct = require("./functions/matrixProduct.js");
+		FUNCTIONS.matrixSum = require("./functions/matrixSum.js");
+		FUNCTIONS.max = require("./functions/max.js");
+		FUNCTIONS.median = require("./functions/median.js");
+		FUNCTIONS.min = require("./functions/min.js");
+		FUNCTIONS.mode = require("./functions/mode.js");
+		FUNCTIONS.nthRoot = require("./functions/nthRoot.js");
+		
+		FUNCTIONS.phi = require("./functions/phi.js");
+		FUNCTIONS.power = require("./functions/power.js");
+		FUNCTIONS.product = require("./functions/product.js");
+		FUNCTIONS.random = require("./functions/random.js");
+		FUNCTIONS.quotient = require("./functions/quotient.js");
+		FUNCTIONS.remainder = FUNCTIONS.difference = require("./functions/remainder.js");
+		FUNCTIONS.sign = require("./functions/sign.js");
+		FUNCTIONS.stdev = require("./functions/stdev.js");
+		FUNCTIONS.square = require("./functions/square.js");
+		FUNCTIONS.sum = require("./functions/sum.js");
+		FUNCTIONS.tau = require("./functions/tau.js");
+		FUNCTIONS.transpose = require("./functions/transpose.js");
+		FUNCTIONS.type = require("./functions/type.js");
+		FUNCTIONS.variance = require("./functions/variance.js");
+		FUNCTIONS.vectorAverage = require("./functions/vectorAverage.js");
+		FUNCTIONS.vectorDifference = require("./functions/vectorDifference.js");
+		FUNCTIONS.vectorProduct = require("./functions/vectorProduct.js");
+		FUNCTIONS.vectorQuotient = require("./functions/vectorQuotient.js");
+		FUNCTIONS.vectorSum = require("./functions/vectorSum.js");
+		
 		
 		FUNCTIONS.$ = function(coordinates,options) {
 			const values = [],
@@ -255,15 +801,6 @@
 			}
 			return Cell.find(pattern,Cell.cellIndex);
 		}
-		FUNCTIONS.average = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			if(options && options.if) v = v.filter(options.if);
-			v = v.filter(item => typeof(item)==="number");
-			if(v.length===0) return 0;
-			return mean(v);
-		}
 		FUNCTIONS.averagea = function() {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
@@ -273,22 +810,12 @@
 			options = Object.assign({replace:replaceForA()},(options || {}));
 			return v.reduce((accumulator,current) => accumulator + coerce(current,options),0) / v.length;
 		}
-		FUNCTIONS.count = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(options && options.if) v = v.filter(options.if);
-			v = v.filter(item => typeof(item)==="number");
-			return v.length;
-		}
 		FUNCTIONS.counta = function() {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
 			if(options && options.if) v = v.filter(options.if);
 			v = v.filter(item => item!==null && typeof(item)!=="undefined");
 			return v.length;
-		}
-		FUNCTIONS.cube = function(v) {
-			return v * v * v;
 		}
 		FUNCTIONS.extend = function() {
 			const parts = CURRENTCELL.coordinates.split("."),
@@ -333,48 +860,6 @@
 			CURRENTCELL.compiled();
 			return CURRENTCELL.computed;
 		}
-		FUNCTIONS.factorial = function(v) {
-			let result = 1;
-			v = Math.round(v);
-			while(v) result *= v--;
-			return result;
-		}
-		FUNCTIONS.intersection = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(v.length===0) return [];
-			const result = intersection(...v);
-			if(options && options.if) return result.filter(options.if);
-			return result;
-		}
-		FUNCTIONS.isNegative = function(v) {
-			return v < 0;
-		}
-		FUNCTIONS.isNumeric = function(v) {
-			return typeof(v)==="number";
-		}
-		FUNCTIONS.isPositive = function(v) {
-			return v > 0;
-		}
-		FUNCTIONS.isPrime = num => {
-		    for(let i = 2, s = Math.sqrt(num); i <= s; i++)
-		        if(num % i === 0) return false; 
-		    return num !== 1;
-		}
-		FUNCTIONS.mad = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(options && options.if) v = v.filter(options.if);
-			return mad(v);
-		}
-		FUNCTIONS.max = function()  { // pattern,options or v1,v2,v3...options
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return -Infinity;
-			return v.reduce((accumulator,current) => Math.max(accumulator,current));
-		}
 		FUNCTIONS.maxa = function()  {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
@@ -385,26 +870,6 @@
 			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
 			return v.reduce((accumulator,current) => Math.max(accumulator,current));
 		}
-		FUNCTIONS.median = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(options && options.if) v = v.filter(options.if);
-			return median(v);
-		}
-		FUNCTIONS.mode = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(options && options.if) v = v.filter(options.if);
-			return mode(v);
-		}
-		FUNCTIONS.min = function()  { // pattern,options or v1,v2,v3...options
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return Infinity;
-			return v.reduce((accumulator,current) => Math.min(accumulator,current));
-		}
 		FUNCTIONS.mina = function()  {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
@@ -414,31 +879,6 @@
 			options = Object.assign({replace:replaceForA()},(options || {}));
 			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
 			return v.reduce((accumulator,current) => Math.min(accumulator,current));
-		}
-		FUNCTIONS.power = function(x,y) {
-			return x ^ y;
-		}
-		// power dotPow
-		FUNCTIONS.product = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) {
-				if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => mMultiply(accumulator,current));
-				else if(v.length>1) {
-					v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
-					if(options && options.if) v = v.filter(options.if);
-					if(v.length===0) return 0;
-					return v.reduce((accumulator,current) => gridMultiply(accumulator,current));
-				}
-				else v = v[0];
-			}
-			if(v.length===0) return 0;
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			return v.reduce((accumulator,current) => accumulator * current,1);
-		}
-		FUNCTIONS.dotProduct = function(a,b) {
-			return dotProduct(a,b);
 		}
 		FUNCTIONS.producta = function()  {
 			let v, options;
@@ -457,27 +897,6 @@
 			},(options || {}));
 			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:options}));
 			return FUNCTIONS.product(...v);
-		}
-		FUNCTIONS.quotient = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) {
-				if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => mDivide(accumulator,current));
-				else if(v.length>1) {
-					v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
-					if(options && options.if) v = v.filter(options.if);
-					if(v.length===0) return 0;
-					return v.reduce((accumulator,current) => gridDivide(accumulator,current));
-				}
-				else v = v[0];
-			}
-			if(v.length===0) return 0;
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			return v.reduce((accumulator,current) => accumulator / current,1);
-		}
-		FUNCTIONS.dotDivided = function(a,b) {
-			return dotDivided(a,b);
 		}
 		FUNCTIONS.quotienta = function()  {
 			let v, options;
@@ -498,52 +917,12 @@
 			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:options}));
 			return FUNCTIONS.quotient(...v);
 		}
-		FUNCTIONS.remainder = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) {
-				if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => mSubtract(accumulator,current));
-				else if(v.length>1){
-					v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
-					if(options && options.if) v = v.filter(options.if);
-					if(v.length===0) return 0;
-					return v.reduce((accumulator,current) => mSubtract(accumulator,current));
-				} else {
-					v = v[0];
-				}
-			}
-			if(v.length===0) return 0;
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			return v.reduce((accumulator,current) => accumulator - current);
-		}
 		FUNCTIONS.remaindera = function() {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
 			options = Object.assign({replace:replaceForA()},(options || {}));
 			if(options && options.if) v = v.filter(options.if);
 			return v.reduce((accumulator,current) => accumulator - coerce(current,options),0);
-		}
-		FUNCTIONS.square = function(v) {
-			return v * v;
-		}
-		FUNCTIONS.sum = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) {
-				if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => mAdd(accumulator,current));
-				else if(v.length>1){
-					v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
-					if(options && options.if) v = v.filter(options.if);
-					if(v.length===0) return 0;
-					return v.reduce((accumulator,current) => mAdd(accumulator,current));
-				} else {
-					v = v[0];
-				}
-			}
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			return v.reduce((accumulator,current) => accumulator + current,0);
 		}
 		FUNCTIONS.suma = function() {
 			let v, options;
@@ -552,37 +931,7 @@
 			if(options && options.if) v = v.filter(options.if);
 			return v.reduce((accumulator,current) => accumulator + coerce(current,options),0);
 		}
-		FUNCTIONS.type = function(v) {
-			const type = typeof(v);
-			return (v===null || v===undefined ? "undefined" : (Array.isArray(v) ? "Array" : (type==="object" ? v.constructor.name : type)));
-		}
-		FUNCTIONS.madev = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return 0;
-			return mad(v); 
-		}
-		FUNCTIONS.stdev = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return 0;
-			return stdev(v); 
-		}
-		FUNCTIONS.variance = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return 0;
-			return variance(v); 
-		}
+		
 		FUNCTIONS.zscores = function() {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
@@ -591,12 +940,6 @@
 			if(options && options.if) v = v.filter(options.if);
 			if(v.length===0) return 0;
 			return zscores(v); 
-		}
-		FUNCTIONS.phi = function() {
-			return (1 + Math.sqrt(5)) / 2;
-		}
-		FUNCTIONS.tau = function() {
-			return 2 * Math.PI;
 		}
 		const mathdesc = Object.getOwnPropertyDescriptors(Math);
 		for(let key in mathdesc) {
@@ -612,12 +955,10 @@
 				FUNCTIONS[key.toLowerCase()] = () => Math[key];
 			}
 		}
-		DECLARATIONS = declarations();
 		me.functions = new Proxy(FUNCTIONS,{
 			set: function(target,property,value) {
 				if(typeof(value)!=="function") throw new Error("Hypercalc custom function must be a function: ", value);
 				target[property] = value;
-				DECLARATIONS = declarations();
 				return true;
 			}
 		});
@@ -668,7 +1009,8 @@
 			delete this.compiled;
 			this.index();
 			if(typeof(this.data)==="string" && this.data.indexOf("=")===0) {
-				Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { " + DECLARATIONS + "return " + this.data.substring(1) + "; }")(FUNCTIONS)});
+				//Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { " + DECLARATIONS + "return " + this.data.substring(1) + "; }")(FUNCTIONS)});
+				Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { with(functions) { return " + this.data.substring(1) + "; }}")(FUNCTIONS)});
 			}
 			for(let pattern in Cell.observers) {
 				const observers = [];
@@ -701,7 +1043,7 @@
 				for(let coordinates in me.references) Cell.cells[coordinates].calc();
 			}
 		}
-		Cell.prototype.index = function(index=Cell.cellIndex) { // need to enhance to support compiling ranges
+		Cell.prototype.index = function(index=Cell.cellIndex) { // need to enhance to support compiling ranges, or create a parrallel binary index
 			if(index===Cell.cellIndex) {
 				Cell.cells[this.coordinates] = this;
 			} else if(index===Cell.observerIndex) {
@@ -915,4 +1257,4 @@
 	if(typeof(window)!=="undefined") window.Hypercalc = Hypercalc;
 	
 }).call(this);
-},{}]},{},[1]);
+},{"./functions/average.js":1,"./functions/count.js":2,"./functions/cube.js":3,"./functions/dimensions.js":4,"./functions/distance.js":5,"./functions/dotProduct.js":6,"./functions/equal.js":7,"./functions/factorial.js":8,"./functions/intersection.js":9,"./functions/isFunction.js":10,"./functions/isMatrix.js":11,"./functions/isNegative.js":12,"./functions/isNumber.js":13,"./functions/isPositive.js":14,"./functions/isPrime.js":15,"./functions/isVector.js":16,"./functions/madev.js":17,"./functions/matrixDifference.js":18,"./functions/matrixProduct.js":19,"./functions/matrixSum.js":20,"./functions/max.js":21,"./functions/median.js":22,"./functions/min.js":23,"./functions/mode.js":24,"./functions/nthRoot.js":25,"./functions/phi.js":26,"./functions/power.js":27,"./functions/product.js":28,"./functions/quotient.js":29,"./functions/random.js":30,"./functions/remainder.js":31,"./functions/sign.js":32,"./functions/square.js":33,"./functions/stdev.js":34,"./functions/sum.js":35,"./functions/tau.js":36,"./functions/transpose.js":37,"./functions/type.js":38,"./functions/variance.js":39,"./functions/vectorAverage.js":40,"./functions/vectorDifference.js":41,"./functions/vectorProduct.js":42,"./functions/vectorQuotient.js":43,"./functions/vectorSum.js":44}]},{},[46]);

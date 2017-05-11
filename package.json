@@ -1,11 +1,11 @@
 {
   "name": "hypercalc",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A multi-dimensional, headless JavaScript spreadsheet for the browser or Node.js.",
   "engines": {},
   "license": "AGPLv3",
   "scripts": {
-    "prepublish": "browserify index.js -o browser/hypercalc.js",
+    "prepublish": "browserify src/index.js -o browser/hypercalc.js",
     "test": "mocha test/index.js"
   },
   "repository": {

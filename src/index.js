@@ -27,96 +27,15 @@
 (function() {
 	"use strict"
 	
-	const dotDivided = (a,b) => a.map((x,i) => a[i] / b[i]).reduce((m,n) => m + n);
-
-	const dotProduct = (a,b) => a.map((x,i) => a[i] * b[i]).reduce((m,n) => m + n);
-	
 	const gridDivide = (a,b) => a.map((x,i) => a[i] / (Array.isArray(b) ? b[i] : b));
 
 	const gridMultiply = (a,b) => a.map((x,i) => a[i] * (Array.isArray(b) ? b[i] : b));
 	
-	function intersection() {
-		const args = [].slice.call(arguments).sort((a,b) => a.length - b.length),
-	    	intersection = new Set(args[0]);
-	    for(let elem of intersection) {
-	    	for(let i=1;i<args.length;i++) {
-		    	if(!args[i].includes(elem)) {
-		    		intersection.delete(elem);
-		    		break;
-		    	}
-		    }
-	    }
-	    return [...intersection];
-	}
 	
-	function mad(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		const m = mean(args);
-		return mean(args.map(num => Math.abs(num - m)));
-	}
-	
-	const mMultiply = (a,b) => a.map((x,i) => transpose(b).map((y,k) => dotProduct(x, y)));
-	
-	const mDivide = (a,b) => a.map((x,i) => transpose(b).map((y,k) => dotDivided(x, y)));
 	
 	const mAdd = (a,b) => a.map((x,i) => a[i] + (Array.isArray(b) ? b[i] || 0 : b));
 
 	const mSubtract = (a,b) => a.map((x,i) => a[i] - (Array.isArray(b) ? b[i] || 0 : b));
-	
-	function mean(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		if (!args.length) return Infinity;
-		return sum(args) / args.length;
-	}
-	
-	function median(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		if (!args.length) return 0;
-		const numbers = args.sort((a,b) => a - b),
-			middle = Math.floor(numbers.length / 2),
-			isEven = numbers.length % 2 === 0;
-		return isEven ? (numbers[middle] + numbers[middle - 1]) / 2 : numbers[middle];
-	}
-	
-	function mode(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		if (!args.length) return [];
-		const modeMap = {};
-		let modes = [],
-			maxCount = 0;
-		for(let val of args) {
-			if (!modeMap[val]) modeMap[val] = 1;
-			else modeMap[val]++;
-
-			if (modeMap[val] > maxCount) {
-				modes = [val];
-				maxCount = modeMap[val];
-			}
-			else if (modeMap[val] === maxCount) {
-				modes.push(val);
-				maxCount = modeMap[val];
-			}
-		}
-		return modes;
-	}
-	
-	function stdev(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		if (!args.length) return 0;
-		return Math.sqrt(variance(args));
-	}
-	
-	function variance(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		const m = mean(args);
-		return mean(args.map(num => Math.pow(num - m, 2)));
-	}
-	
-	function sum(args) {
-		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
-		if (!args.length) return 0;
-		return args.reduce((accumulator,current) => accumulator + current);
-	}
 	
 	function zscores(args) {
 		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
@@ -124,8 +43,6 @@
 			sd = stdev(args);
 		return args.map(num => (num - m) / sd);
 	}
-	
-	const transpose = a => a[0].map((x,i) => a.map((y,k) => y[i]));
 	
 	const traverse = (matrix,callback) => {
 		for(let i=0;i<matrix.length;i++) {
@@ -194,24 +111,68 @@
 		});
 	}
 	
+	const FUNCTIONS = {};
+	
 	function Hypercalc(options={}) {
-		const me = this,
-			FUNCTIONS = {};
+		const me = this;
 		let CURRENTCELL, DECLARATIONS;
 		me.options = Object.assign({},options);
 		me.calculating = 0;
 		Object.defineProperty(me,"oncalculated",{enumerable:false,configurable:true,writable:true,value:options.oncalculated});
 		
-		const declarations = () => {
-			const keys = Object.keys(FUNCTIONS);
-			let str = "const ";
-			keys.forEach((key,i) => {
-				str += key + "=functions['"+key+"']";
-				if(i<keys.length-1) str += ",";
-			});
-			str += ";"
-			return str;
-		}
+		FUNCTIONS.average = require("./functions/average.js");
+		FUNCTIONS.count = require("./functions/count.js");
+		FUNCTIONS.cube = require("./functions/cube.js");
+		
+		FUNCTIONS.dimensions = require("./functions/dimensions.js");
+		FUNCTIONS.distance = require("./functions/distance.js");
+		
+		FUNCTIONS.dotProduct = require("./functions/dotProduct.js");
+		
+		FUNCTIONS.equal = require("./functions/equal.js");
+		
+		FUNCTIONS.factorial = require("./functions/factorial.js");
+		FUNCTIONS.intersection = require("./functions/intersection.js");
+		
+		FUNCTIONS.isFunction = require("./functions/isFunction.js");
+		FUNCTIONS.isMatrix = require("./functions/isMatrix.js");
+		FUNCTIONS.isNegative = require("./functions/isNegative.js");
+		FUNCTIONS.isNumeric = FUNCTIONS.isNumber = require("./functions/isNumber.js");
+		FUNCTIONS.isPositive = require("./functions/isPositive.js");
+		FUNCTIONS.isPrime = require("./functions/isPrime.js");
+		FUNCTIONS.isVector = require("./functions/isVector.js");
+		
+		FUNCTIONS.madev = require("./functions/madev.js");
+		
+		FUNCTIONS.matrixDifference = require("./functions/matrixDifference.js");
+		FUNCTIONS.matrixProduct = require("./functions/matrixProduct.js");
+		FUNCTIONS.matrixSum = require("./functions/matrixSum.js");
+		FUNCTIONS.max = require("./functions/max.js");
+		FUNCTIONS.median = require("./functions/median.js");
+		FUNCTIONS.min = require("./functions/min.js");
+		FUNCTIONS.mode = require("./functions/mode.js");
+		FUNCTIONS.nthRoot = require("./functions/nthRoot.js");
+		
+		FUNCTIONS.phi = require("./functions/phi.js");
+		FUNCTIONS.power = require("./functions/power.js");
+		FUNCTIONS.product = require("./functions/product.js");
+		FUNCTIONS.random = require("./functions/random.js");
+		FUNCTIONS.quotient = require("./functions/quotient.js");
+		FUNCTIONS.remainder = FUNCTIONS.difference = require("./functions/remainder.js");
+		FUNCTIONS.sign = require("./functions/sign.js");
+		FUNCTIONS.stdev = require("./functions/stdev.js");
+		FUNCTIONS.square = require("./functions/square.js");
+		FUNCTIONS.sum = require("./functions/sum.js");
+		FUNCTIONS.tau = require("./functions/tau.js");
+		FUNCTIONS.transpose = require("./functions/transpose.js");
+		FUNCTIONS.type = require("./functions/type.js");
+		FUNCTIONS.variance = require("./functions/variance.js");
+		FUNCTIONS.vectorAverage = require("./functions/vectorAverage.js");
+		FUNCTIONS.vectorDifference = require("./functions/vectorDifference.js");
+		FUNCTIONS.vectorProduct = require("./functions/vectorProduct.js");
+		FUNCTIONS.vectorQuotient = require("./functions/vectorQuotient.js");
+		FUNCTIONS.vectorSum = require("./functions/vectorSum.js");
+		
 		
 		FUNCTIONS.$ = function(coordinates,options) {
 			const values = [],
@@ -254,15 +215,6 @@
 			}
 			return Cell.find(pattern,Cell.cellIndex);
 		}
-		FUNCTIONS.average = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			if(options && options.if) v = v.filter(options.if);
-			v = v.filter(item => typeof(item)==="number");
-			if(v.length===0) return 0;
-			return mean(v);
-		}
 		FUNCTIONS.averagea = function() {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
@@ -272,22 +224,12 @@
 			options = Object.assign({replace:replaceForA()},(options || {}));
 			return v.reduce((accumulator,current) => accumulator + coerce(current,options),0) / v.length;
 		}
-		FUNCTIONS.count = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(options && options.if) v = v.filter(options.if);
-			v = v.filter(item => typeof(item)==="number");
-			return v.length;
-		}
 		FUNCTIONS.counta = function() {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
 			if(options && options.if) v = v.filter(options.if);
 			v = v.filter(item => item!==null && typeof(item)!=="undefined");
 			return v.length;
-		}
-		FUNCTIONS.cube = function(v) {
-			return v * v * v;
 		}
 		FUNCTIONS.extend = function() {
 			const parts = CURRENTCELL.coordinates.split("."),
@@ -332,48 +274,6 @@
 			CURRENTCELL.compiled();
 			return CURRENTCELL.computed;
 		}
-		FUNCTIONS.factorial = function(v) {
-			let result = 1;
-			v = Math.round(v);
-			while(v) result *= v--;
-			return result;
-		}
-		FUNCTIONS.intersection = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(v.length===0) return [];
-			const result = intersection(...v);
-			if(options && options.if) return result.filter(options.if);
-			return result;
-		}
-		FUNCTIONS.isNegative = function(v) {
-			return v < 0;
-		}
-		FUNCTIONS.isNumeric = function(v) {
-			return typeof(v)==="number";
-		}
-		FUNCTIONS.isPositive = function(v) {
-			return v > 0;
-		}
-		FUNCTIONS.isPrime = num => {
-		    for(let i = 2, s = Math.sqrt(num); i <= s; i++)
-		        if(num % i === 0) return false; 
-		    return num !== 1;
-		}
-		FUNCTIONS.mad = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(options && options.if) v = v.filter(options.if);
-			return mad(v);
-		}
-		FUNCTIONS.max = function()  { // pattern,options or v1,v2,v3...options
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return -Infinity;
-			return v.reduce((accumulator,current) => Math.max(accumulator,current));
-		}
 		FUNCTIONS.maxa = function()  {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
@@ -384,26 +284,6 @@
 			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
 			return v.reduce((accumulator,current) => Math.max(accumulator,current));
 		}
-		FUNCTIONS.median = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(options && options.if) v = v.filter(options.if);
-			return median(v);
-		}
-		FUNCTIONS.mode = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(options && options.if) v = v.filter(options.if);
-			return mode(v);
-		}
-		FUNCTIONS.min = function()  { // pattern,options or v1,v2,v3...options
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return Infinity;
-			return v.reduce((accumulator,current) => Math.min(accumulator,current));
-		}
 		FUNCTIONS.mina = function()  {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
@@ -413,31 +293,6 @@
 			options = Object.assign({replace:replaceForA()},(options || {}));
 			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
 			return v.reduce((accumulator,current) => Math.min(accumulator,current));
-		}
-		FUNCTIONS.power = function(x,y) {
-			return x ^ y;
-		}
-		// power dotPow
-		FUNCTIONS.product = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) {
-				if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => mMultiply(accumulator,current));
-				else if(v.length>1) {
-					v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
-					if(options && options.if) v = v.filter(options.if);
-					if(v.length===0) return 0;
-					return v.reduce((accumulator,current) => gridMultiply(accumulator,current));
-				}
-				else v = v[0];
-			}
-			if(v.length===0) return 0;
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			return v.reduce((accumulator,current) => accumulator * current,1);
-		}
-		FUNCTIONS.dotProduct = function(a,b) {
-			return dotProduct(a,b);
 		}
 		FUNCTIONS.producta = function()  {
 			let v, options;
@@ -456,27 +311,6 @@
 			},(options || {}));
 			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:options}));
 			return FUNCTIONS.product(...v);
-		}
-		FUNCTIONS.quotient = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) {
-				if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => mDivide(accumulator,current));
-				else if(v.length>1) {
-					v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
-					if(options && options.if) v = v.filter(options.if);
-					if(v.length===0) return 0;
-					return v.reduce((accumulator,current) => gridDivide(accumulator,current));
-				}
-				else v = v[0];
-			}
-			if(v.length===0) return 0;
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			return v.reduce((accumulator,current) => accumulator / current,1);
-		}
-		FUNCTIONS.dotDivided = function(a,b) {
-			return dotDivided(a,b);
 		}
 		FUNCTIONS.quotienta = function()  {
 			let v, options;
@@ -497,52 +331,12 @@
 			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:options}));
 			return FUNCTIONS.quotient(...v);
 		}
-		FUNCTIONS.remainder = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) {
-				if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => mSubtract(accumulator,current));
-				else if(v.length>1){
-					v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
-					if(options && options.if) v = v.filter(options.if);
-					if(v.length===0) return 0;
-					return v.reduce((accumulator,current) => mSubtract(accumulator,current));
-				} else {
-					v = v[0];
-				}
-			}
-			if(v.length===0) return 0;
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			return v.reduce((accumulator,current) => accumulator - current);
-		}
 		FUNCTIONS.remaindera = function() {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
 			options = Object.assign({replace:replaceForA()},(options || {}));
 			if(options && options.if) v = v.filter(options.if);
 			return v.reduce((accumulator,current) => accumulator - coerce(current,options),0);
-		}
-		FUNCTIONS.square = function(v) {
-			return v * v;
-		}
-		FUNCTIONS.sum = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) {
-				if(Array.isArray(v[0][0])) return v.reduce((accumulator,current) => mAdd(accumulator,current));
-				else if(v.length>1){
-					v = v.filter(item => typeof(item)==="number" || Array.isArray(item));
-					if(options && options.if) v = v.filter(options.if);
-					if(v.length===0) return 0;
-					return v.reduce((accumulator,current) => mAdd(accumulator,current));
-				} else {
-					v = v[0];
-				}
-			}
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			return v.reduce((accumulator,current) => accumulator + current,0);
 		}
 		FUNCTIONS.suma = function() {
 			let v, options;
@@ -551,37 +345,7 @@
 			if(options && options.if) v = v.filter(options.if);
 			return v.reduce((accumulator,current) => accumulator + coerce(current,options),0);
 		}
-		FUNCTIONS.type = function(v) {
-			const type = typeof(v);
-			return (v===null || v===undefined ? "undefined" : (Array.isArray(v) ? "Array" : (type==="object" ? v.constructor.name : type)));
-		}
-		FUNCTIONS.madev = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return 0;
-			return mad(v); 
-		}
-		FUNCTIONS.stdev = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return 0;
-			return stdev(v); 
-		}
-		FUNCTIONS.variance = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			v = v.filter(item => typeof(item)==="number");
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return 0;
-			return variance(v); 
-		}
+		
 		FUNCTIONS.zscores = function() {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
@@ -590,12 +354,6 @@
 			if(options && options.if) v = v.filter(options.if);
 			if(v.length===0) return 0;
 			return zscores(v); 
-		}
-		FUNCTIONS.phi = function() {
-			return (1 + Math.sqrt(5)) / 2;
-		}
-		FUNCTIONS.tau = function() {
-			return 2 * Math.PI;
 		}
 		const mathdesc = Object.getOwnPropertyDescriptors(Math);
 		for(let key in mathdesc) {
@@ -611,12 +369,10 @@
 				FUNCTIONS[key.toLowerCase()] = () => Math[key];
 			}
 		}
-		DECLARATIONS = declarations();
 		me.functions = new Proxy(FUNCTIONS,{
 			set: function(target,property,value) {
 				if(typeof(value)!=="function") throw new Error("Hypercalc custom function must be a function: ", value);
 				target[property] = value;
-				DECLARATIONS = declarations();
 				return true;
 			}
 		});
@@ -667,7 +423,8 @@
 			delete this.compiled;
 			this.index();
 			if(typeof(this.data)==="string" && this.data.indexOf("=")===0) {
-				Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { " + DECLARATIONS + "return " + this.data.substring(1) + "; }")(FUNCTIONS)});
+				//Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { " + DECLARATIONS + "return " + this.data.substring(1) + "; }")(FUNCTIONS)});
+				Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { with(functions) { return " + this.data.substring(1) + "; }}")(FUNCTIONS)});
 			}
 			for(let pattern in Cell.observers) {
 				const observers = [];
@@ -700,7 +457,7 @@
 				for(let coordinates in me.references) Cell.cells[coordinates].calc();
 			}
 		}
-		Cell.prototype.index = function(index=Cell.cellIndex) { // need to enhance to support compiling ranges
+		Cell.prototype.index = function(index=Cell.cellIndex) { // need to enhance to support compiling ranges, or create a parrallel binary index
 			if(index===Cell.cellIndex) {
 				Cell.cells[this.coordinates] = this;
 			} else if(index===Cell.observerIndex) {
