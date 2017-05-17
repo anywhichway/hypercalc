@@ -1,0 +1,115 @@
+<html>
+<head>
+<script src="../../browser/hypercalc.es5.js"></script>
+</head>
+<body>
+<table id="ui" border="1" style="border-spacing: 0px;">
+<tr><td></td><td colspan="5"><input id="editor" width="100%"></td></tr>
+</table>
+<script>
+
+const hc = new Hypercalc(),
+	tab1 = new hc.Sheet("Tab1"),
+	table = document.getElementById("ui"),
+	editor = document.getElementById("editor"),
+	update = (item,value) => {
+		item.value === value || (item.value===value);
+		if(item instanceof hc.Cell) {
+			editor.cell = item;
+			editor.value = item.data;
+		}
+	};
+editor.onchange = function(e) {
+	e.target.focused.cell.data === e.target.value || (e.target.focused.cell.value = e.target.value);
+}
+
+const inputs = [];
+for(let r=1;r<=4;r++) {
+	const row = [];
+	inputs.push(row);
+	for(let c=1;c<=4;c++) {
+		// create the input cells first so focus can be set based on key strokes
+		const input = document.createElement("input");
+		input.row = r-1;
+		input.col = c-1;
+		row.push(input);
+		input.onkeyup = function(e) {
+			if(e.keyCode===13) {
+				const row = inputs[e.target.row+1];
+				let input;
+				if(row) input = row[e.target.col];
+				if(input) {
+					setTimeout(() =>input.focus());
+				}
+			}
+		}
+		input.onchange = function(e) {
+			(input.value.indexOf("=")===0 && input.cell.data === input.value) || input.cell.value === input.value || (input.cell.value = input.value);
+		}
+		input.onfocus = function(e) { 
+			editor.focused = input; input.value = editor.value = input.cell.data;
+		}
+		input.onblur = function(e) { 
+			input.value = input.cell.value;
+		}
+	}
+}
+editor.onkeydown = function(e) {
+	if(e.keyCode===9) {
+		const row = inputs[e.target.focused.row];
+		let input;
+		if(row) input = row[e.target.focused.col+1];
+		if(input) {
+			setTimeout(() =>input.focus());
+		}
+	}
+}
+editor.onkeyup = function(e) {
+	if(e.keyCode===13) {
+		const row = inputs[e.target.focused.row+1];
+		let input;
+		if(row) input = row[e.target.focused.col];
+		if(input) {
+			setTimeout(() =>input.focus());
+		}
+	}
+}
+for(let r=0;r<=4;r++) {
+	const row = document.createElement("tr");
+	table.appendChild(row);
+	for(let c=0;c<=4;c++) {
+		const td = document.createElement("td");
+		td.style.padding = "0px";
+		if(c===0) td.style.width = "5px"
+		else td.style.width = "15px";
+		row.appendChild(td);
+		if(r>0 && c>0) {
+			const cell = hc.Cell(["Tab1",c,r].join("."),null,{oncalculated:cell => input.value===cell.value || (input.value = cell.value) }),
+				input = inputs[r-1][c-1];
+			td.appendChild(input);
+			input.cell = cell;
+		} else {
+			if(r===0) td.innerText = c;
+			if(c===0) td.innerText = r;
+		}
+	}
+}
+
+/*
+ * = value
+ *.* = [] if a Cell references just two, then default to its own tab
+ *.*.* = [[]] 
+ *.*.*.* [[]]
+ *
+ sum ... sums all values
+ Vector.sum ... sums items in same dimensional position (same as Matrix.sum) 
+ Vector.product ... multiplies items in same dimensional position
+ Vector.dotProduct
+ Space.sum
+ Space.product
+ Matrix.sum
+ dimension {keys: {x:true,y:true,z:true},functions: { sum:(), distance:(), }}
+ */
+</script>
+</body>
+</html>

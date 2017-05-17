@@ -1,44 +1,756 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function() {
-	const getArgs = require("../getArgs.js"),
-		isNumber = require("./isNumber.js"),
-		isVector = require("./isVector.js"),
-		vectorAverage = require("./vectorAverage.js");
-	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length>1 && v.every(arg => isVector(arg))) return vectorAverage(...arguments);
-		else if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		v = v.filter(item => typeof(item)==="number");
-		if(options && options.if) v = v.filter(options.if);
-		if(v.length===0) return Infinity;
-		let count = 0;
-		return v.reduce((accumulator,current) => {
-			if(typeof(current)==="number") {
-				accumulator += current;
-				count++;
-			}
-			return accumulator;
-		},0) / count;
+	// concatMap :: (a -> [b]) -> [a] -> [b]
+	module.exports = (f,reduce) => xs => (reduce ? xs.map(f).reduce((x,y) => x.concat(y), []).reduce((accu,curr) => reduce(accu,curr)): xs.map(f).reduce((x,y) => x.concat(y), []))
+}).call(this);
+},{}],2:[function(require,module,exports){
+(function() {
+	module.exports = function() { return (this ? new Date(...arguments) : Date(...arguments)) }
+	module.exports.now = () => Date.now();
+	module.exports.parse = (string) => Date.parse(string);
+	module.exports.UTC = () => Date.UTC(...arguments);
+	for(let key in Date.prototype) {
+		if(typeof(Date.prototype[key])==="function") {
+			module.exports[key] = function() { return Date.prototype[key].call(...arguments); }
+		}
 	}
 }).call(this);
-},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16,"./vectorAverage.js":40}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 (function() {
-	const getArgs = require("../getArgs.js");
+	module.exports = (p1,p2) => Math.sqrt(p1.reduce((accumulator,current,i) => accumulator += Math.pow(p2[i]-p1[i],2),0));
+}).call(this);
+},{}],4:[function(require,module,exports){
+(function() {
+	module.exports = {};
+	module.exports.distance = require("./distance.js");
+}).call(this);
+},{"./distance.js":3}],5:[function(require,module,exports){
+(function() {
+	module.exports = (value) => Math.pow(value,1/3);
+}).call(this);
+},{}],6:[function(require,module,exports){
+(function() {
+	module.exports = value => value * value * value;
+}).call(this);
+},{}],7:[function(require,module,exports){
+(function() {
+	module.exports =  v => {
+		let result = 1;
+		v = Math.round(v);
+		while(v) result *= v--;
+		return result;
+	}
+}).call(this);
+},{}],8:[function(require,module,exports){
+(function() {
+	module.exports = {};
+	const mathdesc = Object.getOwnPropertyDescriptors(Math);
+	for(let key in mathdesc) {
+		if(typeof(Math[key])==="function") module.exports[key] = function() { return Math[key](...arguments); }
+		else {
+			module.exports[key.toLowerCase()] = () => Math[key];
+			module.exports[key] = Math[key];
+		}
+	}
+	module.exports.cbrt = require("./cbrt.js");
+	module.exports.cube = require("./cube.js");
+	module.exports.factorial = require("./factorial.js");
+	module.exports.nthRoot = require("./nthRoot.js");
+	module.exports.phi = require("./phi.js");
+	module.exports.power = require("./power.js");
+	module.exports.sign = require("./sign.js");
+	module.exports.tau = require("./tau.js");
+	module.exports.random = require("./random.js");
+	module.exports.square = require("./square.js");
+}).call(this);
+},{"./cbrt.js":5,"./cube.js":6,"./factorial.js":7,"./nthRoot.js":9,"./phi.js":10,"./power.js":11,"./random.js":12,"./sign.js":13,"./square.js":14,"./tau.js":15}],9:[function(require,module,exports){
+(function() {
+	module.exports = (value,root=2) => Math.pow(value,1/root);
+}).call(this);
+},{}],10:[function(require,module,exports){
+(function() {
+	module.exports = () => (1 + Math.sqrt(5)) / 2;
+}).call(this);
+},{}],11:[function(require,module,exports){
+(function() {
+	module.exports = (x,y) => x ^ y;
+}).call(this);
+},{}],12:[function(require,module,exports){
+(function() {
+	const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+	module.exports = function(min,max) {
+		let result;
+		if(arguments.length>=2) result = getRandomInt(min,max);
+		else result = Math.random();
+		return result;
+	}
+}).call(this);
+},{}],13:[function(require,module,exports){
+(function() {
+	const isNumber = require("../isNumber.js");
+	module.exports = value => (isNumber(value) ? (value > 0 ? 1 : (value ===0 ? 0 : -1)) : undefined);
+}).call(this);
+},{"../isNumber.js":43}],14:[function(require,module,exports){
+(function() {
+	module.exports = value => value * value;
+}).call(this);
+},{}],15:[function(require,module,exports){
+(function() {
+	module.exports = () => 2 * Math.PI;
+}).call(this);
+},{}],16:[function(require,module,exports){
+(function() {
+	const Vector = require("../Vector/index.js");
+	function array_equals(a, b)
+	{
+	  return a.length === b.length && a.every(function(value, index) {
+	    return value === b[index];
+	  });
+	};
+
+	function getdim(arr)
+	{
+	  if (!Array.isArray(arr)) {
+	    return []; // current array has no dimension
+	  }
+	  var dim = arr.reduce(function(result, current) {
+	    // check each element of arr against the first element
+	    // to make sure it has the same dimensions
+	    return array_equals(result, getdim(current)) ? result : false;
+	  }, getdim(arr[0]));
+
+	  // dim is either false or an array
+	  return dim && [arr.length].concat(dim);
+	}
+	function Matrix() {
+		
+	}
+	Matrix.sum = function() {
+		return [].slice.call(arguments).reduce((accumulator,current) => {
+			for(let i=0;i<accumulator.length;i++) accumulator[i] = Vector.sum(accumulator[i],Array.isArray(current) ? current[i] : current);
+			return accumulator;
+		});
+	}
+	Matrix.dimensions = getdim;
+	Matrix.invert = function(m) {
+		function inverse(_A) {
+		    var temp,
+		    N = _A.length,
+		    E = [];
+		   
+		    for (var i = 0; i < N; i++)
+		      E[i] = [];
+		   
+		    for (i = 0; i < N; i++)
+		      for (var j = 0; j < N; j++) {
+		        E[i][j] = 0;
+		        if (i == j)
+		          E[i][j] = 1;
+		      }
+		   
+		    for (var k = 0; k < N; k++) {
+		      temp = _A[k][k];
+		   
+		      for (var j = 0; j < N; j++)
+		      {
+		        _A[k][j] /= temp;
+		        E[k][j] /= temp;
+		      }
+		   
+		      for (var i = k + 1; i < N; i++)
+		      {
+		        temp = _A[i][k];
+		   
+		        for (var j = 0; j < N; j++)
+		        {
+		          _A[i][j] -= _A[k][j] * temp;
+		          E[i][j] -= E[k][j] * temp;
+		        }
+		      }
+		    }
+		   
+		    for (var k = N - 1; k > 0; k--)
+		    {
+		      for (var i = k - 1; i >= 0; i--)
+		      {
+		        temp = _A[i][k];
+		   
+		        for (var j = 0; j < N; j++)
+		        {
+		          _A[i][j] -= _A[k][j] * temp;
+		          E[i][j] -= E[k][j] * temp;
+		        }
+		      }
+		    }
+		   
+		    for (var i = 0; i < N; i++)
+		      for (var j = 0; j < N; j++)
+		        _A[i][j] = E[i][j];
+		    return _A;
+		  }
+		return inverse(a);
+	}
+	Matrix.power = Matrix.pow = function(m,pow) {
+		while(pow-->1) {
+			m = Matrix.product(m,m.slice(0));
+		}
+		return m;
+	}
+	Matrix.product = function(a,b) {
+		return a.map((x,i) => Matrix.transpose(b.slice(0)).map((y) => Vector.dotProduct(x.slice(0), y.slice(0))));
+	}
+	Matrix.difference = function() {
+		return [].slice.call(arguments).reduce((accumulator,current) => {
+			for(let i=0;i<accumulator.length;i++) accumulator[i] = Vector.difference(accumulator[i],Array.isArray(current) ? current[i] : current);
+			return accumulator;
+		});
+	}
+	Matrix.transpose = function(m) {
+		return m[0].map((x,i) => m.map((y,k) => y[i]));
+	}
+	module.exports = Matrix;
+}).call(this);
+},{"../Vector/index.js":31}],17:[function(require,module,exports){
+(function() {
+	module.exports = () => 1.6021766208;
+}).call(this);
+},{}],18:[function(require,module,exports){
+(function() {
+	module.exports = {};
+	module.exports.c = require("./speedOfLight.js");
+	module.exports.e = require("./elementaryCharge.js");
+	module.exports.planks = module.exports.h = require("./planks.js");
+}).call(this);
+},{"./elementaryCharge.js":17,"./planks.js":19,"./speedOfLight.js":20}],19:[function(require,module,exports){
+(function() {
+	module.exports = () => 6.626070040 * Math.pow(10,34);
+}).call(this);
+},{}],20:[function(require,module,exports){
+(function() {
+	module.exports = () => 299792458;
+}).call(this);
+},{}],21:[function(require,module,exports){
+(function() {
+	module.exports = {};
+	module.exports.average = require("../average.js");
+	module.exports.count = require("../count.js");
+	module.exports.madev = require("./madev.js");
+	module.exports.max = require("./max.js");
+	module.exports.median = require("./median.js");
+	module.exports.min = require("./min.js");
+	module.exports.mode = require("./mode.js");
+	module.exports.product = require("../product.js");
+	module.exports.stdev = require("./stdev.js");
+	module.exports.sum = require("../sum.js");
+	module.exports.variance = require("./variance.js");
+}).call(this);
+},{"../average.js":33,"../count.js":34,"../product.js":49,"../sum.js":52,"./madev.js":22,"./max.js":23,"./median.js":24,"./min.js":25,"./mode.js":26,"./stdev.js":27,"./variance.js":28}],22:[function(require,module,exports){
+(function() {
+	const average = require("../average"),
+		flatten = require("../flatten.js"),
+		sum = require("../sum.js");
+	module.exports = function() {
+		const args = flatten([].slice.call(arguments),true),
+			m = average(args);
+		return average(args.map(num => Math.abs(num - m)));
+	}
+}).call(this);
+},{"../average":33,"../flatten.js":38,"../sum.js":52}],23:[function(require,module,exports){
+(function() {
+	const Unit = require("../Unit/index.js"),
+		flattenReduce = require("../flattenReduce.js");
+	module.exports = function() {
+		if(arguments.length===0) return -Infinity;
+		return flattenReduce([].slice.call(arguments),Unit.max,true);
+	}
+}).call(this);
+},{"../Unit/index.js":30,"../flattenReduce.js":39}],24:[function(require,module,exports){
+(function() {
+	const getArgs = require("../../getArgs.js");
+	function median(args) {
+		if (!args.length) return 0;
+		const numbers = args.sort((a,b) => a - b),
+			middle = Math.floor(numbers.length / 2),
+			isEven = numbers.length % 2 === 0;
+		return isEven ? (numbers[middle] + numbers[middle - 1]) / 2 : numbers[middle];
+	}
 	module.exports = function() {
 		let v, options;
 		[v,options] = getArgs([].slice.call(arguments,0));
 		if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		v = v.filter(item => typeof(item)==="number");
 		if(options && options.if) v = v.filter(options.if);
-		return v.length;
+		return median(v);
 	}
 }).call(this);
-},{"../getArgs.js":45}],3:[function(require,module,exports){
+},{"../../getArgs.js":55}],25:[function(require,module,exports){
 (function() {
-	module.exports = value => value * value * value;
+	const Unit = require("../Unit/index.js"),
+		flattenReduce = require("../flattenReduce.js");
+	module.exports = function() {
+		if(arguments.length===0) return Infinity;
+		return flattenReduce([].slice.call(arguments),Unit.min,true);
+	}
 }).call(this);
-},{}],4:[function(require,module,exports){
+},{"../Unit/index.js":30,"../flattenReduce.js":39}],26:[function(require,module,exports){
+(function() {
+	const getArgs = require("../../getArgs.js");
+	function mode(args) {
+		if (!args.length) return [];
+		const modeMap = {};
+		let modes = [],
+			maxCount = 0;
+		for(let val of args) {
+			const v = val.valueOf();
+			if (!modeMap[v]) modeMap[v] = 1;
+			else modeMap[v]++;
+
+			if (modeMap[v] > maxCount) {
+				modes = [val];
+				maxCount = modeMap[v];
+			}
+			else if (modeMap[v] === maxCount) {
+				modes.push(val);
+				maxCount = modeMap[v];
+			}
+		}
+		return modes;
+	}
+	module.exports = function() {
+		let v, options;
+		[v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===1 && Array.isArray(v[0])) v = v[0];
+		if(options && options.if) v = v.filter(options.if);
+		return mode(v);
+	}
+}).call(this);
+},{"../../getArgs.js":55}],27:[function(require,module,exports){
+(function() {
+	const average = require("../average"),
+		flatten = require("../flatten.js"),
+		variance = require("./variance.js");
+	module.exports = function() {
+		const args = flatten([].slice.call(arguments),true),
+			m = average(args);
+		return !args.length ? 0 : Math.sqrt(variance(args));
+	}
+}).call(this);
+},{"../average":33,"../flatten.js":38,"./variance.js":28}],28:[function(require,module,exports){
+(function() {
+	const average = require("../average"),
+		flatten = require("../flatten.js"),
+		sum = require("../sum.js"),
+		variance = args => {
+			const m = average(args);
+			return args.reduce((accumulator, current) => accumulator += Math.pow((current - m), 2),0) / args.length;
+		};	
+	module.exports = function() {
+		const args = flatten([].slice.call(arguments),true),
+			m = average(args);
+		return args.reduce((accumulator, current) => accumulator += Math.pow((current - m), 2),0) / args.length;
+	}
+}).call(this);
+},{"../average":33,"../flatten.js":38,"../sum.js":52}],29:[function(require,module,exports){
+(function() {
+	module.exports = function() { return (this ? new String(...arguments) : String(...arguments)); }
+	const stringdesc = Object.getOwnPropertyDescriptors(String.prototype);
+	for(let key in stringdesc) {
+		if(typeof(String.prototype[key])==="function") {
+			module.exports[key] = function() { return String.prototype[key].call(...arguments); }
+		}
+	}
+}).call(this);
+},{}],30:[function(require,module,exports){
+(function() {
+	function adjustUnits(unit,base,divide) {
+		const mainparts = unit.baseUnits.split("/"),
+			modifier = (divide ? -1 : 1),
+			numerator = mainparts[0].split(" ").filter(item => item!="1" && item!==""),
+			denominator = (mainparts[1] ? mainparts[1].split(" ").filter(item => item!="1" && item!=="") : []),
+			baseparts = base.split("/"),
+			basemap = {
+				numerator: (baseparts[(divide ? 1 :0)] || "").split(" ").filter(item => item!="1" && item!=="").reduce((accumulator,current) => { 
+					const parts = current.split("^"),
+						unit = parts[0],
+						power = (parts[1] ? parseFloat(parts[1]) : 1);
+					accumulator[unit] = power;
+					return accumulator;
+				},{}),
+				denominator: (baseparts[(divide ? 0 :1)] || "").split(" ").filter(item => item!="1" && item!="").reduce((accumulator,current) => { 
+					const parts = current.split("^"),
+						unit = parts[0],
+						power = (parts[1] ? parseFloat(parts[1]) : 1);
+					accumulator[unit] = power;
+					return accumulator;
+				},{})
+			},
+			used = {};
+			for(let i=0;i<numerator.length;i++) {
+				const subparts = numerator[i].split("^");
+				used[subparts[0]] = true;
+					subparts[1] = ((subparts[1] ? parseFloat(subparts[1]) : 1) + (basemap.numerator[subparts[0]] || 0)) - (basemap.denominator[subparts[0]] || 0);
+					if(subparts[1]===0) numerator.splice(i,1);
+					else if(subparts[1]===1) numerator[i] = subparts[0];
+					else numerator[i] = subparts.join("^");
+			}
+			for(let i=0;i<denominator.length;i++) {
+				const subparts = denominator[i].split("^");
+				used[subparts[0]] = true;
+					subparts[1] = ((subparts[1] ? parseFloat(subparts[1]) : 1) + (basemap.denominator[subparts[0]] || 0)) - (basemap.numerator[subparts[0]] || 0);
+					if(subparts[1]===0) denominator.splice(i,1);
+					else if(subparts[1]===1) denominator[i] = subparts[0];
+					else denominator[i] = subparts.join("^");
+			}
+			for(let unit in basemap.denominator) {
+				const power = basemap.denominator[unit];
+				used[unit] || denominator.push(power>1 ? unit+"^"+power : unit);
+			}
+			denominator.sort(); 
+			for(let unit in basemap.numerator) {
+				const power = basemap.numerator[unit];
+				used[unit] || numerator.push(power>1 ? unit+"^"+power : unit);
+			}
+			numerator.sort(); 
+		unit.baseUnits  = (numerator.length > 0 ? numerator.join(" ") : (denominator.length > 0 ? 1 : "")) + (denominator.length > 0 ? " / " + denominator.join(" ") : "");
+	}
+	function createUnit(value,scope=Object.create(Unit.prototype)) {
+		if(value && typeof(value)==="object" && value instanceof Unit) {
+			for(let key of ["value","units","baseUnits"]) scope[key] = value[key];
+			Object.defineProperty(scope,"constructor",{enumerable:false,configurable:true,writable:true,value:Unit});
+			return scope;
+		}
+		scope.value = value;
+		scope.units = {};
+		scope.baseUnits = "";
+		Object.defineProperty(scope,"constructor",{enumerable:false,configurable:true,writable:true,value:Unit});
+		return scope;
+	}
+	function Unit(value,unit) {
+		const type = typeof(value);
+		if((!this || !(this instanceof Unit)) && value && type==="object" && value instanceof Unit) {
+			return value;
+		} else if(type==="string") {
+			if((!this || !(this instanceof Unit))) {
+				return new Unit(value,unit);
+			}
+			const u = Unit.parse(value);
+			for(let key in u) {
+				this[key] = u[key];
+			}
+		} else if(type==="number") {
+			if((!this || !(this instanceof Unit))) {
+				return new Unit(value,unit);
+			}
+			createUnit(value,this);
+		} else {
+			throw new TypeError(`Can't create Unit from ${JSON.stringify(value)}`);
+		}
+		if(unit) {
+			const base = Unit.getBase(unit);
+			if(base!==unit) this.value *= Unit.getConversion(base,unit);
+			this.baseUnits = base;
+			unit===this.baseUnits || (this.units[unit] = this.baseUnits);
+		}
+		Object.freeze(this);
+	}
+	Unit.conversions = {
+		cm: {
+			in: 2.54
+		},
+		ms: {
+			sec: 1000
+		}
+	}
+	Unit.add = function(a,b)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a + b;
+		a = createUnit(Unit(a)); // create a changeable Unit
+		b = Unit(b);
+		if(a.baseUnits===b.baseUnits || b.baseUnits==="") a.value += b.value
+		else throw new TypeError("Incompatible " + a + " + " + b);
+		return Object.freeze(a);
+	}
+	Unit.as = function(a,unit) {
+		if(typeof(a)==="string") a = Unit.parse(a);
+		const c = Unit.getConversion(a.baseUnits,unit);
+		if(typeof(c)==="number") return a.value * c;
+	}
+	Unit.divide = function(a,b)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a / b;
+		a = createUnit(Unit(a)); // create a changeable Unit
+		b = Unit(b);
+		if(a.baseUnits===b.baseUnits || Unit.isSimple(b)) {
+			a.value /= b.value;
+			if(b.baseUnits && b.baseUnits.length>0) adjustUnits(a,b.baseUnits,true);
+		} else throw new TypeError("Incompatible " + a + " / " + b);
+		return Object.freeze(a);
+	}
+	Unit.isSimple = function(a) {
+		return a instanceof Unit && a.baseUnits.indexOf(" ")===-1;
+	}
+	Unit.multiply = function(a,b)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a * b;
+		a = createUnit(Unit(a)); // create a changeable Unit
+		b = Unit(b);
+		if(a.baseUnits===b.baseUnits || Unit.isSimple(b)) {
+			a.value *= b.value;
+			if(b.baseUnits && b.baseUnits.length>0) adjustUnits(a,b.baseUnits);
+		} else throw new TypeError("Incompatible " + a + " * " + b);
+		return Object.freeze(a);
+	}
+	Unit.pow = function(a,b) {
+		if(typeof(a)==="number") return Math.pow(a,b);
+		a = createUnit(Unit(a)); // create a changeable Unit
+		a.value = Math.pow(a.value,b)
+		adjustUnits(a,a.baseUnits);	
+		return Object.freeze(a);
+	}
+	Unit.subtract = function(a,b)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a - b;
+		a = createUnit(Unit(a)); // create a changeable Unit
+		b = Unit(b);
+		a.constructor = Unit;
+		if(a.baseUnits===b.baseUnits || b.baseUnits==="") a.value -= b.value
+		else throw new TypeError("Incompatible " + a + " - " + b);
+		return Object.freeze(a);
+	}
+	Unit.to = function(a,unit) {
+		const parts = unit.split(" ");
+		a = createUnit(Unit(a));
+		for(let part of parts) {
+			if(part==="/") continue;
+			const base = Unit.getBase(part);
+			for(let unit in a.units) {
+				if(unit!==part && a.units[unit]===base) {
+					delete a.units[unit];
+					if(part!==base) a.units[part] = base;
+				}
+			}
+		}
+		return Object.freeze(a);
+	}
+	Unit.toJSON = function(a) {
+		return a.valueOf();
+	}
+	Unit.valueOf = function(a) {
+		let units = a.baseUnits,
+			value = a.value,
+			parts = units.split(" ");
+		for(let unit in a.units) {
+			const base = a.units[unit];
+			if(units.indexOf(base)>=0) { 
+				for(let part of parts) {
+					let multiplier = 1;
+					if(part.indexOf(base)===0) {
+						const subparts = part.split("^");
+						if(subparts[0]===base && subparts[1]) multiplier = parseFloat(subparts[1]);
+					}
+					value /= Math.pow(Unit.getConversion(base,unit),multiplier);
+					units = units.replace(new RegExp(base,"g"),unit);
+				}
+			}
+		}
+		return value + " " + units;
+	}
+	for(let key in Unit) {
+		if(typeof(Unit[key])==="function") Unit.prototype[key] = function() { return Unit[key](this,...arguments); }
+	}
+	Unit.getBase = function(unit) {
+		for(let base in Unit.conversions) {
+			if(base===unit || typeof(Unit.conversions[base][unit])==="number") return base;
+		}
+	}
+	Unit.getConversion = function(unit1,unit2) {
+		if(unit1===unit2) return 1;
+		let base = Unit.getBase(unit1);
+		if(base && Unit.conversions[base][unit2]) return Unit.conversions[base][unit2];
+		base = Unit.getBase(unit2);
+		if(base && Unit.conversions[base][unit1]) return 1 / Unit.conversions[base][unit1];
+	}
+	Unit.max = function(a,b) {
+		if(typeof(a)==="number" && typeof(b)==="number") return Math.max(a,b);
+		a = createUnit(Unit(a)); // create a changeable Unit
+		b = Unit(b);
+		if(a.value>b.value) return a;
+		return b;
+	}
+	Unit.min = function(a,b) {
+		if(typeof(a)==="number" && typeof(b)==="number") return Math.min(a,b);
+		a = createUnit(Unit(a)); // create a changeable Unit
+		b = Unit(b);
+		if(a.value<b.value) return a;
+		return b;
+	}
+	Unit.parse = function(string) {
+		const unit = createUnit(),
+			parts = string.split(" ");
+		unit.value = parseFloat(parts[0]);
+		for(let i=1;i<parts.length;i++) {
+			const part = parts[i];
+			if(part!=="/") {
+				const subparts = part.split("^");
+				const base = Unit.getBase(subparts[0]);
+				if(part!==base) {
+					unit.units[subparts[0]] = base;
+					unit.value *= Unit.conversions[base][subparts[0]];
+				}
+				unit.baseUnits += (unit.baseUnits.length>0 ? " " : "") + base;
+			} else unit.baseUnits += " / ";
+		}
+		return Object.freeze(unit);
+	}
+	module.exports = Unit;
+}).call(this)
+},{}],31:[function(require,module,exports){
+(function() {
+	const add = require("../add.js"),
+		divide = require("../divide.js"),
+		multiply = require("../multiply.js"),
+		pow = require("../pow.js"),
+		subtract = require("../subtract.js"),
+		Unit = require("../Unit/index.js")
+	function array_equals(a, b)
+	{
+	  return a.length === b.length && a.every(function(value, index) {
+	    return value === b[index];
+	  });
+	};
+
+	function getdim(arr)
+	{
+	  if (!Array.isArray(arr)) {
+	    return []; // current array has no dimension
+	  }
+	  var dim = arr.reduce(function(result, current) {
+	    // check each element of arr against the first element
+	    // to make sure it has the same dimensions
+	    return array_equals(result, getdim(current)) ? result : false;
+	  }, getdim(arr[0]));
+
+	  // dim is either false or an array
+	  return dim && [arr.length].concat(dim);
+	}
+
+	function Vector() {
+	  const proxy = new Proxy(new Array(...arguments),{
+	    get: (target,property) => {
+	       // 1st see if target is enhanced with its own properties
+	       let desc = Object.getOwnPropertyDescriptor(target,property);
+	       if(desc) return desc.value;
+	       // 2nd check Vector prototype which may shadow/enhance Array
+	       desc = Object.getOwnPropertyDescriptor(Vector.prototype,property);
+	       if(desc) return desc.value;
+	       // 3rd, just do normal lookup
+	       return target[property];
+	     },
+	     set: (target,property,value) => {
+	       if(typeof(arg)!=="number") {
+	        error("set: Vectors can only contain numbers!");
+	        return;
+	       }
+	       target[property] = value;
+	       return true;
+	     },
+	     deleteProperty: (target,property) => {
+	      // create localized property that makes it look undefined
+	      // causes the 1st get handler to respond with undefined
+	       Object.defineProperty(target,property,{value:undefined});
+	       return true;
+	     }
+	   });
+	   // shadow any unwanted methods by deleting here
+	   [].forEach(key => delete proxy[key]);
+	   return proxy;
+	}
+	Vector.prototype = []; // give Vector all the capability of Array
+	// define push, unshift, splice so they reject nesting arrays
+	["push","unshift","splice"].forEach(property => {
+	  Vector.prototype[property] = function() {
+	    if([].slice.call(arguments).some(arg => Array.isArray(arg))) {
+	      error(property + ": Vectors can only have one dimension!");
+	      return;
+	    }
+	    return [].push.call(this,...arguments);
+	  }
+	});
+	Vector.prototype.concat = function() {
+	 if([].slice.call(arguments).some(arg => Array.isArray(arg)
+	     && arg.some(nested => Array.isArray(nested)))) {
+	     error("concat: Vectors can only have one dimension!");
+	     return;
+	  }
+	 return [].concat.call(this,...arguments);
+	}
+	Vector.reduce = function(args,f) {
+		return args.reduce((accumulator,current) => {
+			for(let i=0;i<accumulator.length;i++) accumulator[i] = f(accumulator[i],Array.isArray(current) ? current[i] : current);
+			return accumulator;
+		});
+	}
+	Vector.map = function(args,f) {
+		return args.map(f);
+	}
+	Vector.sum = function() {
+		return Vector.reduce([].slice.call(arguments),add);
+	}
+	Vector.average = function() {
+		const args = [].slice.call(arguments);
+		return Vector.reduce(args,add).map(a => Unit.divide(a,args.length));
+	}
+	Vector.product = Vector.crossProduct = function(a,b) {
+		if(a.length===2) {
+			return a[0]*b[1]-a[1]*b[0];
+		}
+		return [a[1]*b[2]-a[2]*b[1],
+			a[2]*b[0]-a[0]*b[2],
+			a[0]*b[1]-a[1]*b[0]];
+	}
+	Vector.scalarQuotient = function() {
+		return Vector.reduce([].slice.call(arguments),divide);
+	}
+	Vector.dotProduct = function() {
+		return Vector.reduce([].slice.call(arguments),multiply).reduce(add);
+	}
+	Vector.scalarProduct = function() {
+		return Vector.reduce([].slice.call(arguments),multiply);
+	}
+	Vector.pow = function() {
+		return Vector.reduce([].slice.call(arguments),pow);
+	}
+	Vector.difference = function() {
+		return Vector.reduce([].slice.call(arguments),subtract);
+	}
+	for(let key in Vector) {
+		if(typeof(Vector[key])==="function") Vector.prototype[key] = function() { return Vector[key](this,...arguments); }
+	}
+	module.exports = Vector;
+}).call(this);
+
+},{"../Unit/index.js":30,"../add.js":32,"../divide.js":36,"../multiply.js":47,"../pow.js":48,"../subtract.js":51}],32:[function(require,module,exports){
+(function() {
+	const Unit = require("./Unit/index.js");
+	module.exports = (a,b) => Unit.add(a,b);
+}).call(this);
+},{"./Unit/index.js":30}],33:[function(require,module,exports){
+(function() {
+	const add = require("./add.js"),
+	flattenReduce = require("./flattenReduce.js"),
+	divide = require("./divide.js");
+	module.exports = function() {
+		let count = 1;
+		if(arguments.length===0) return NaN;
+		return divide(flattenReduce([].slice.call(arguments),(a,b) => { count++; return add(a,b); },true),count);
+	}
+}).call(this);
+},{"./add.js":32,"./divide.js":36,"./flattenReduce.js":39}],34:[function(require,module,exports){
+(function() {
+	flattenReduce = require("./flattenReduce.js");
+	module.exports = function() {
+		let count = 1;
+		if(arguments.length===0) return 0;
+		flattenReduce([].slice.call(arguments),(a,b) => { count++; },true);
+		return count;
+	}
+}).call(this);
+},{"./flattenReduce.js":39}],35:[function(require,module,exports){
 (function() {
 	function array_equals(a, b)
 	{
@@ -63,81 +775,64 @@
 	}
 	module.exports = getdim;
 }).call(this);
-},{}],5:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 (function() {
-	module.exports = (p1,p2) => Math.sqrt(p1.reduce((accumulator,current,i) => accumulator += Math.pow(p2[i]-p1[i],2),0));
+	const Unit = require("./Unit/index.js");
+	module.exports = (a,b) => Unit.divide(a,b);
 }).call(this);
-},{}],6:[function(require,module,exports){
-(function() {
-	module.exports = (a,b,options) => a.map((x,i) => a[i] * b[i]).reduce((m,n) => m + n);
-}).call(this);
-},{}],7:[function(require,module,exports){
+},{"./Unit/index.js":30}],37:[function(require,module,exports){
 (function() {
 	// change to a variable arg function
-	const equal = (a,b,options) => {
-			if(a===b) return true;
-			if(Array.isArray(a) && Array.isArray(b)) return arrayEqual(a,b,options);
-		},
-		arrayEqual = (a,b,options) => {
-			return a.length===b.length && a.every((item,i) => equal(item,b[i],options));
-		};
+	// change to support vector and matrices
+	const equal = (a,b) => a===b || (Array.isArray(a) && Array.isArray(b) && arrayEqual(a,b)),
+		arrayEqual = (a,b) => a.length===b.length && a.every((item,i) => equal(item,b[i]));
 	module.exports = equal;
 }).call(this);
-},{}],8:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 (function() {
-	module.exports =  v => {
-		let result = 1;
-		v = Math.round(v);
-		while(v) result *= v--;
-		return result;
-	}
+	const concatMapReduce = require("../concatMapReduce.js");
+	// id :: a -> a
+	const id = x => x;
+	//flatten :: [[a]] -> [a]
+	const flatten = concatMapReduce (id)
+
+	// deepFlatten :: [[[a]]] -> [a]
+	const deepFlatten = concatMapReduce (data => Array.isArray(data) ? deepFlatten(data) : data)
+	
+	module.exports = (array,deep) => (deep ? deepFlatten : flatten)(array);
 }).call(this);
-},{}],9:[function(require,module,exports){
+},{"../concatMapReduce.js":1}],39:[function(require,module,exports){
 (function() {
-	const getArgs = require("../getArgs.js");
-	function intersection() {
-		const args = [].slice.call(arguments).sort((a,b) => a.length - b.length),
-	    	intersection = new Set(args[0]);
-	    for(let elem of intersection) {
-	    	for(let i=1;i<args.length;i++) {
-		    	if(!args[i].includes(elem)) {
-		    		intersection.delete(elem);
-		    		break;
-		    	}
-		    }
-	    }
-	    return [...intersection];
-	}
-	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length===0) return [];
-		const result = intersection(...v);
-		if(options && options.if) return result.filter(options.if);
-		return result;
-	}
+	const concatMapReduce = require("../concatMapReduce.js");
+	// flatten :: [[a]] -> [a]
+	const shallowFlattenReduce = (array,reduce) => concatMapReduce (id,reduce)(array)
+	
+	// deepFlatten :: [[[a]]] -> [a]
+	const deepFlattenReduce = (array,reduce) => concatMapReduce (data => Array.isArray(data) ? deepFlattenReduce(data) : data,reduce)(array)
+	
+	module.exports = (array,reduce,deep) => (deep ? deepFlattenReduce : shallowFlattenReduce)(array,reduce);
 }).call(this);
-},{"../getArgs.js":45}],10:[function(require,module,exports){
+},{"../concatMapReduce.js":1}],40:[function(require,module,exports){
 (function() {
 	module.exports = data => typeof(data)==="function";
 }).call(this);
-},{}],11:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 (function() {
 	module.exports = data => Array.isArray(data) && Array.isArray(data[0]) && Array.isArray(data[data.length-1]);
 }).call(this);
-},{}],12:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 (function() {
 	module.exports = value => value < 0;
 }).call(this);
-},{}],13:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 (function() {
 	module.exports = data => typeof(data)==="number";
 }).call(this);
-},{}],14:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 (function() {
 	module.exports = value => value > 0;
 }).call(this);
-},{}],15:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 (function() {
 	module.exports = num => {
 	    for(let i = 2, s = Math.sqrt(num); i <= s; i++)
@@ -145,427 +840,70 @@
 	    return num !== 1;
 	}
 }).call(this);
-},{}],16:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 (function() {
 	module.exports = data => Array.isArray(data) && !Array.isArray(data[0]) && !Array.isArray(data[data.length-1]);
 }).call(this);
-},{}],17:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 (function() {
-	const getArgs = require("../getArgs.js"),
-		sum = args => (!args.length ? 0 : args.reduce((accumulator,current) => accumulator + current)),
-		mean = args => (!args.length ? Infinity :  sum(args) / args.length),
-		mad = args => {
-			const m = mean(args);
-			return mean(args.map(num => Math.abs(num - m)));
-		};
+	const Unit = require("./Unit/index.js");
+	module.exports = (a,b) => Unit.multiply(a,b);
+}).call(this);
+},{"./Unit/index.js":30}],48:[function(require,module,exports){
+(function() {
+	const Unit = require("./Unit/index.js");
+	module.exports = (a,b) => Unit.pow(a,b);
+}).call(this);
+},{"./Unit/index.js":30}],49:[function(require,module,exports){
+(function() {
+	const add = require("./add.js"),
+		flattenReduce = require("./flattenReduce.js"),
+		multiply = require("./multiply.js");
 	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		if(options && options.if) v = v.filter(options.if);
-		return mad(v);
+		return add(flattenReduce([].slice.call(arguments),multiply,true),0);
 	}
 }).call(this);
-},{"../getArgs.js":45}],18:[function(require,module,exports){
+},{"./add.js":32,"./flattenReduce.js":39,"./multiply.js":47}],50:[function(require,module,exports){
 (function() {
-	const difference = (a,b) => a.map((x,i) => a[i] - b[i]);
+	const add = require("./add.js"),
+		divide = require("./divide.js"),
+		flattenReduce = require("./flattenReduce.js");
 	module.exports = function() {
-		return [].slice.call(arguments,0).reduce((accumulator,current) => accumulator.map((x,i) => difference(x,current[i])));
+		return add(flattenReduce([].slice.call(arguments),divide,true),0);
 	}
 }).call(this);
-},{}],19:[function(require,module,exports){
+},{"./add.js":32,"./divide.js":36,"./flattenReduce.js":39}],51:[function(require,module,exports){
 (function() {
-	const transpose = require("./transpose.js"),
-		dotProduct = require("./dotProduct.js");
-	module.exports = (a,b) => a.map((x,i) => transpose(b).map((y,k) => dotProduct(x, y)));
+	const Unit = require("./Unit/index.js");
+	module.exports = (a,b) => Unit.subtract(a,b);
 }).call(this);
-},{"./dotProduct.js":6,"./transpose.js":37}],20:[function(require,module,exports){
+},{"./Unit/index.js":30}],52:[function(require,module,exports){
 (function() {
-	const sum = (a,b) => a.map((x,i) => a[i] + b[i]);
+	const add = require("./add.js"),
+		flattenReduce = require("./flattenReduce.js");
 	module.exports = function() {
-		return [].slice.call(arguments,0).reduce((accumulator,current) => accumulator.map((x,i) => sum(x,current[i])));
+		return add(flattenReduce([].slice.call(arguments),add,true),0);
 	}
 }).call(this);
-},{}],21:[function(require,module,exports){
+},{"./add.js":32,"./flattenReduce.js":39}],53:[function(require,module,exports){
 (function() {
-	const getArgs = require("../getArgs.js");
-	module.exports = function()  {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		if(options && options.if) v = v.filter(options.if);
-		if(v.length===0) return -Infinity;
-		return v.reduce((accumulator,current) => Math.max(accumulator,current));
+	module.exports = (value,options={}) => { 
+		return new Function("value","return `"+(options.template ? options.template : "${value}")+"`")(value); 
 	}
 }).call(this);
-},{"../getArgs.js":45}],22:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js");
-	function median(args) {
-		if (!args.length) return 0;
-		const numbers = args.sort((a,b) => a - b),
-			middle = Math.floor(numbers.length / 2),
-			isEven = numbers.length % 2 === 0;
-		return isEven ? (numbers[middle] + numbers[middle - 1]) / 2 : numbers[middle];
-	}
-	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		if(options && options.if) v = v.filter(options.if);
-		return median(v);
-	}
-}).call(this);
-},{"../getArgs.js":45}],23:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js");
-	module.exports = function()  {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		if(options && options.if) v = v.filter(options.if);
-		if(v.length===0) return Infinity;
-		return v.reduce((accumulator,current) => Math.min(accumulator,current));
-	}
-}).call(this);
-},{"../getArgs.js":45}],24:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js");
-	function mode(args) {
-		if (!args.length) return [];
-		const modeMap = {};
-		let modes = [],
-			maxCount = 0;
-		for(let val of args) {
-			if (!modeMap[val]) modeMap[val] = 1;
-			else modeMap[val]++;
-
-			if (modeMap[val] > maxCount) {
-				modes = [val];
-				maxCount = modeMap[val];
-			}
-			else if (modeMap[val] === maxCount) {
-				modes.push(val);
-				maxCount = modeMap[val];
-			}
-		}
-		return modes;
-	}
-	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		if(options && options.if) v = v.filter(options.if);
-		return mode(v);
-	}
-}).call(this);
-},{"../getArgs.js":45}],25:[function(require,module,exports){
-(function() {
-	module.exports = (value,root=2) => Math.pow(value,1/root);
-}).call(this);
-},{}],26:[function(require,module,exports){
-(function() {
-	module.exports = () => (1 + Math.sqrt(5)) / 2;
-}).call(this);
-},{}],27:[function(require,module,exports){
-(function() {
-	module.exports = (x,y) => x ^ y;
-}).call(this);
-},{}],28:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js"),
-		isNumber = require("./isNumber.js"),
-		isVector = require("./isVector.js"),
-		isMatrix = require("./isMatrix.js"),
-		vectorProduct = require("./vectorProduct.js"),
-		dimensions = require("./dimensions.js"),
-		matrixProduct = require("./matrixProduct.js");
-	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length>1) {
-			if((v.length===2 && isVector(v[0]) && isNumber(v[1])) || v.every(arg => isVector(arg))) return vectorProduct(...arguments);
-			if(isMatrix(v[0])) {
-				const d1 = dimensions(v[0]),
-					d2 = dimensions(v[1]);
-				if(d1.length>0 && d1[0]===d2[1] || d2[0]===d1[1]) return matrixProduct(...arguments);
-			}
-		}
-		else if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		v = v.filter(item => typeof(item)==="number");
-		if(options && options.if) v = v.filter(options.if);
-		if(v.length===0) return 0;
-		return v.reduce((accumulator,current) => {
-			if(isNumber(current)) accumulator *= current;
-			return accumulator;
-		},1);
-	}
-}).call(this);
-},{"../getArgs.js":45,"./dimensions.js":4,"./isMatrix.js":11,"./isNumber.js":13,"./isVector.js":16,"./matrixProduct.js":19,"./vectorProduct.js":42}],29:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js"),
-		isNumber = require("./isNumber.js"),
-		isVector = require("./isVector.js"),
-		vectorQuotient = require("./vectorQuotient.js");
-	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length>1) {
-			if((v.length===2 && isVector(v[0]) && isNumber(v[1])) || v.every(arg => isVector(arg))) return vectorQuotient(...arguments);
-		}
-		else if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		v = v.filter(item => typeof(item)==="number");
-		if(options && options.if) v = v.filter(options.if);
-		if(v.length===0) return 0;
-		return v.reduce((accumulator,current) => {
-			if(isNumber(current)) accumulator /= current;
-			return accumulator;
-		},1);
-	}
-}).call(this);
-},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16,"./vectorQuotient.js":43}],30:[function(require,module,exports){
-(function() {
-	const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-	module.exports = function(min,max) {
-		let result;
-		if(arguments.length>=2) result = getRandomInt(min,max);
-		else result = Math.random();
-		return result;
-	}
-}).call(this);
-},{}],31:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js"),
-		isNumber = require("./isNumber.js"),
-		isVector = require("./isVector.js"),
-		isMatrix = require("./isMatrix.js"),
-		vectorDifference = require("./vectorDifference.js"),
-		matrixDifference = require("./matrixDifference.js"),
-		dimensions = require("./dimensions.js"),
-		equal = require("./equal.js");
-	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length>1) {
-			if((v.length===2 && isVector(v[0]) && isNumber(v[1])) || v.every(arg => isVector(arg))) return vectorDifference(...arguments);
-			if(isMatrix(v[0])) {
-				const d = dimensions(v[0]);
-				if(v.every((item,i) => i===0 || (isMatrix(item) && equal(d,dimensions(item))))) return matrixDifference(...arguments);
-			}
-		}
-		else if(v.length===1) v = v[0];
-		v = v.filter(item => typeof(item)==="number");
-		if(options && options.if) v = v.filter(options.if);
-		if(v.length===0) return Infinity;
-		return v.reduce((accumulator,current) => {
-			if(typeof(current)==="number") {
-				accumulator -= current;
-			}
-			return accumulator;
-		});
-	}
-}).call(this);
-},{"../getArgs.js":45,"./dimensions.js":4,"./equal.js":7,"./isMatrix.js":11,"./isNumber.js":13,"./isVector.js":16,"./matrixDifference.js":18,"./vectorDifference.js":41}],32:[function(require,module,exports){
-(function() {
-	const isNumber = require("./isNumber.js");
-	module.exports = value => (isNumber(value) ? (value > 0 ? 1 : (value ===0 ? 0 : -1)) : undefined);
-}).call(this);
-},{"./isNumber.js":13}],33:[function(require,module,exports){
-(function() {
-	module.exports = value => value * value;
-}).call(this);
-},{}],34:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js"),
-		sum = args => (!args.length ? 0 : args.reduce((accumulator,current) => accumulator + current)),
-		mean = args => (!args.length ? Infinity :  sum(args) / args.length),
-		variance = args => {
-			const m = mean(args);
-			return args.reduce((accumulator, current) => accumulator += Math.pow((current - m), 2),0) / args.length;
-		},
-		stdev = args => (!args.length ? 0 : Math.sqrt(variance(args)));
-	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		v = v.filter(item => typeof(item)==="number");
-		if(options && options.if) v = v.filter(options.if);
-		if(v.length===0) return 0;
-		return stdev(v); 
-	}
-}).call(this);
-},{"../getArgs.js":45}],35:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js"),
-		isNumber = require("./isNumber.js"),
-		isVector = require("./isVector.js"),
-		isMatrix = require("./isMatrix.js"),
-		vectorSum = require("./vectorSum.js"),
-		matrixSum = require("./matrixSum.js"),
-		dimensions = require("./dimensions.js"),
-		equal = require("./equal.js");
-	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length>1) {
-			if((v.length===2 && isVector(v[0]) && isNumber(v[1])) || v.every(arg => isVector(arg))) return vectorSum(...arguments);
-			if(isMatrix(v[0])) {
-				const d = dimensions(v[0]);
-				if(v.every((item,i) => i===0 || (isMatrix(item) && equal(d,dimensions(item))))) return matrixSum(...arguments);
-			}
-		}
-		else if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		v = v.filter(item => typeof(item)==="number");
-		if(options && options.if) v = v.filter(options.if);
-		if(v.length===0) return Infinity;
-		return v.reduce((accumulator,current) => {
-			if(typeof(current)==="number") {
-				accumulator += current;
-			}
-			return accumulator;
-		},0);
-	}
-}).call(this);
-},{"../getArgs.js":45,"./dimensions.js":4,"./equal.js":7,"./isMatrix.js":11,"./isNumber.js":13,"./isVector.js":16,"./matrixSum.js":20,"./vectorSum.js":44}],36:[function(require,module,exports){
-(function() {
-	module.exports = () => 2 * Math.PI;
-}).call(this);
-},{}],37:[function(require,module,exports){
-(function() {
-	module.exports = a => a[0].map((x,i) => a.map((y,k) => y[i]));
-}).call(this);
-},{}],38:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 (function() {
 	module.exports = function(v) {
 		const type = typeof(v);
 		return (v===null || v===undefined ? "undefined" : (Array.isArray(v) ? "Array" : (type==="object" ? v.constructor.name : type)));
 	}
 }).call(this);
-},{}],39:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js"),
-		sum = args => (!args.length ? 0 : args.reduce((accumulator,current) => accumulator + current)),
-		mean = args => (!args.length ? Infinity :  sum(args) / args.length),
-		variance = args => {
-			const m = mean(args);
-			return args.reduce((accumulator, current) => accumulator += Math.pow((current - m), 2),0) / args.length;
-		};
-	module.exports = function() {
-		let v, options;
-		[v,options] = getArgs([].slice.call(arguments,0));
-		if(v.length===1 && Array.isArray(v[0])) v = v[0];
-		v = v.filter(item => typeof(item)==="number");
-		if(options && options.if) v = v.filter(options.if);
-		if(v.length===0) return 0;
-		return variance(v); 
-	}
-}).call(this);
-},{"../getArgs.js":45}],40:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js");
-	module.exports = function() {
-		let [v,options] = getArgs([].slice.call(arguments,0));
-		const counts = new Array(v[0].length);
-		return v.sort((a,b) => b.length - a.length).reduce((accumulator,current) => current.map((value, i) => { 
-			if(typeof(value)==="number" && (!options || !options.if || options.if(value))) {
-				accumulator[i] = (accumulator[i] || 0) + value;
-				counts[i] = (counts[i] || 0) + 1;
-			}
-			return accumulator[i];
-			}),new Array(v[0].length)).map((value,i) => value /= counts[i]);
-	}
-}).call(this);
-},{"../getArgs.js":45}],41:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js"),
-		isVector = require("./isVector.js"),
-		isNumber = require("./isNumber.js");
-	module.exports = function() {
-		const [v,options] = getArgs([].slice.call(arguments,0));
-		return v.reduce((accumulator,current) => { 
-			if(isVector(current)) { 
-				current.map((value, i) => { 
-					if(i>=accumulator.length) accumulator[i] = value;
-					else if(typeof(value)==="number" && (!options || !options.if || options.if(value))) accumulator[i] -= value
-					return accumulator[i];
-				});
-			} else if(isNumber(current)) {
-				for(let i=0;i<accumulator.length;i++) accumulator[i] -= current;
-			}
-			return accumulator;
-		});
-	}
-}).call(this);
-},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16}],42:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js"),
-		isNumber = require("./isNumber.js"),
-		isVector = require("./isVector.js");
-	module.exports = function() {
-		const [v,options] = getArgs([].slice.call(arguments,0));
-		return v.reduce((accumulator,current) => { 
-			if(isVector(current)) {
-				current.map((value, i) => {
-					if(i>=accumulator.length) accumulator[i] = 1;
-					if(typeof(value)==="number" && (!options || !options.if || options.if(value))) accumulator[i] *= value;
-					return accumulator[i];
-					})
-			} else if(isNumber(current)) {
-				for(let i=0;i<accumulator.length;i++) accumulator[i] *= current;
-			}
-			return accumulator;
-		});
-	}
-}).call(this);
-},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16}],43:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js"),
-		isNumber = require("./isNumber.js"),
-		isVector = require("./isVector.js");
-	module.exports = function() {
-		const [v,options] = getArgs([].slice.call(arguments,0));
-		return v.reduce((accumulator,current) => { 
-			if(isVector(current)) {
-				current.map((value, i) => {
-					if(i>=accumulator.length) accumulator[i] = value;
-					else if(typeof(value)==="number" && (!options || !options.if || options.if(value))) accumulator[i] /= value;
-					return accumulator[i];
-					})
-			} else if(isNumber(current)){
-				for(let i=0;i<accumulator.length;i++) accumulator[i] /= current;
-			}
-			return accumulator;
-		});
-	}
-}).call(this);
-},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16}],44:[function(require,module,exports){
-(function() {
-	const getArgs = require("../getArgs.js"),
-		isVector = require("./isVector.js"),
-		isNumber = require("./isNumber.js");
-	module.exports = function() {
-		const [v,options] = getArgs([].slice.call(arguments,0));
-		return v.reduce((accumulator,current) => { 
-			if(isVector(current)) { 
-				current.map((value, i) => { 
-					if(i>=accumulator.length) accumulator[i] = value;
-					else if(typeof(value)==="number" && (!options || !options.if || options.if(value))) accumulator[i] += value
-					return accumulator[i];
-				});
-			} else if(isNumber(current)) {
-				for(let i=0;i<accumulator.length;i++) accumulator[i] += current;
-			}
-			return accumulator;
-		});
-	}
-}).call(this);
-},{"../getArgs.js":45,"./isNumber.js":13,"./isVector.js":16}],45:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 (function() {
 	function getArgs(args) {
 		getArgs.VARGS = [];
 		const last = args[args.length-1],
 			options = (last && typeof(last)==="object" && !Array.isArray(last) ? last : null);
-		let values = [];
 		!options || (args = args.slice(0,args.length-1));
 		const result = [];
 		for(let i=0;i<args.length;i++) {
@@ -583,7 +921,7 @@
 	}
 	module.exports = getArgs;
 }).call(this);
-},{}],46:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 /*  AGPLv3.0 License
 * 
 * Hypercalc
@@ -706,19 +1044,26 @@
 		me.calculating = 0;
 		Object.defineProperty(me,"oncalculated",{enumerable:false,configurable:true,writable:true,value:options.oncalculated});
 		
+		FUNCTIONS.Date = require("./functions/Date/index.js");
+		
+		FUNCTIONS.Geometry = require("./functions/Geometry/index.js");
+		
+		FUNCTIONS.Math = require("./functions/Math/index.js");
+		
+		FUNCTIONS.Matrix = require("./functions/Matrix/index.js");
+		FUNCTIONS.Physics = require("./functions/Physics/index.js");
+		FUNCTIONS.Statistics = require("./functions/Statistics/index.js");
+			
+		FUNCTIONS.String = require("./functions/String/index.js");
+		
+		FUNCTIONS.Unit = require("./functions/Unit/index.js");
+		FUNCTIONS.Vector = require("./functions/Vector/index.js");
+	
+		FUNCTIONS.add = require("./functions/add.js");
 		FUNCTIONS.average = require("./functions/average.js");
-		FUNCTIONS.count = require("./functions/count.js");
-		FUNCTIONS.cube = require("./functions/cube.js");
-		
 		FUNCTIONS.dimensions = require("./functions/dimensions.js");
-		FUNCTIONS.distance = require("./functions/distance.js");
-		
-		FUNCTIONS.dotProduct = require("./functions/dotProduct.js");
-		
+		FUNCTIONS.divide = require("./functions/divide.js");
 		FUNCTIONS.equal = require("./functions/equal.js");
-		
-		FUNCTIONS.factorial = require("./functions/factorial.js");
-		FUNCTIONS.intersection = require("./functions/intersection.js");
 		
 		FUNCTIONS.isFunction = require("./functions/isFunction.js");
 		FUNCTIONS.isMatrix = require("./functions/isMatrix.js");
@@ -728,37 +1073,14 @@
 		FUNCTIONS.isPrime = require("./functions/isPrime.js");
 		FUNCTIONS.isVector = require("./functions/isVector.js");
 		
-		FUNCTIONS.madev = require("./functions/madev.js");
-		
-		FUNCTIONS.matrixDifference = require("./functions/matrixDifference.js");
-		FUNCTIONS.matrixProduct = require("./functions/matrixProduct.js");
-		FUNCTIONS.matrixSum = require("./functions/matrixSum.js");
-		FUNCTIONS.max = require("./functions/max.js");
-		FUNCTIONS.median = require("./functions/median.js");
-		FUNCTIONS.min = require("./functions/min.js");
-		FUNCTIONS.mode = require("./functions/mode.js");
-		FUNCTIONS.nthRoot = require("./functions/nthRoot.js");
-		
-		FUNCTIONS.phi = require("./functions/phi.js");
-		FUNCTIONS.power = require("./functions/power.js");
+		FUNCTIONS.multiply = require("./functions/multiply.js");
 		FUNCTIONS.product = require("./functions/product.js");
-		FUNCTIONS.random = require("./functions/random.js");
+		FUNCTIONS.power = FUNCTIONS.pow = require("./functions/pow.js");
 		FUNCTIONS.quotient = require("./functions/quotient.js");
-		FUNCTIONS.remainder = FUNCTIONS.difference = require("./functions/remainder.js");
-		FUNCTIONS.sign = require("./functions/sign.js");
-		FUNCTIONS.stdev = require("./functions/stdev.js");
-		FUNCTIONS.square = require("./functions/square.js");
+		FUNCTIONS.subtract = require("./functions/subtract.js");
 		FUNCTIONS.sum = require("./functions/sum.js");
-		FUNCTIONS.tau = require("./functions/tau.js");
-		FUNCTIONS.transpose = require("./functions/transpose.js");
+		FUNCTIONS.text = require("./functions/text.js");
 		FUNCTIONS.type = require("./functions/type.js");
-		FUNCTIONS.variance = require("./functions/variance.js");
-		FUNCTIONS.vectorAverage = require("./functions/vectorAverage.js");
-		FUNCTIONS.vectorDifference = require("./functions/vectorDifference.js");
-		FUNCTIONS.vectorProduct = require("./functions/vectorProduct.js");
-		FUNCTIONS.vectorQuotient = require("./functions/vectorQuotient.js");
-		FUNCTIONS.vectorSum = require("./functions/vectorSum.js");
-		
 		
 		FUNCTIONS.$ = function(coordinates,options) {
 			const values = [],
@@ -777,6 +1099,11 @@
 				else results[option] = value;
 			}
 			return results;
+		}
+		FUNCTIONS.interval = function(i,value) {
+			const cell = CURRENTCELL;
+			setInterval(() => { cell.calc(); },i)
+			return "="+value;
 		}
 		FUNCTIONS.destructure = FUNCTIONS.varg = function(arg) {
 			VARGS.push(arg);
@@ -941,20 +1268,9 @@
 			if(v.length===0) return 0;
 			return zscores(v); 
 		}
-		const mathdesc = Object.getOwnPropertyDescriptors(Math);
-		for(let key in mathdesc) {
-			if(FUNCTIONS[key] || FUNCTIONS[key.toLowerCase()]) continue;
-			if(typeof(Math[key])==="function") {
-				FUNCTIONS[key] = function() {
-					let v, options;
-					[v,options] = getargs([].slice.call(arguments,0));
-					if(options && options.if) v = v.filter(options.if);
-					return Math[key](...v);
-				}
-			} else {
-				FUNCTIONS[key.toLowerCase()] = () => Math[key];
-			}
-		}
+		
+		
+
 		me.functions = new Proxy(FUNCTIONS,{
 			set: function(target,property,value) {
 				if(typeof(value)!=="function") throw new Error("Hypercalc custom function must be a function: ", value);
@@ -988,6 +1304,7 @@
 					return this.valueOf();
 				},
 				set: function(value) {
+					if(typeof(value)==="string" && value==parseFloat(value)) value = parseFloat(value);
 					this.data = value;
 					this.compile().calc();
 					return true;
@@ -1025,7 +1342,11 @@
 				if(me.compiled) {
 					const current = CURRENTCELL;
 					CURRENTCELL = me;
-					me.computed = me.compiled();
+					let value = me.compiled();
+					if(typeof(value)==="string" && value.indexOf("=")===0) {
+						value = new Function("return " + value.substring(1))()();
+					}
+					me.computed = value;
 					CURRENTCELL = current;
 				}
 				!me.options.oncalculated || me.options.oncalculated(me);
@@ -1257,4 +1578,4 @@
 	if(typeof(window)!=="undefined") window.Hypercalc = Hypercalc;
 	
 }).call(this);
-},{"./functions/average.js":1,"./functions/count.js":2,"./functions/cube.js":3,"./functions/dimensions.js":4,"./functions/distance.js":5,"./functions/dotProduct.js":6,"./functions/equal.js":7,"./functions/factorial.js":8,"./functions/intersection.js":9,"./functions/isFunction.js":10,"./functions/isMatrix.js":11,"./functions/isNegative.js":12,"./functions/isNumber.js":13,"./functions/isPositive.js":14,"./functions/isPrime.js":15,"./functions/isVector.js":16,"./functions/madev.js":17,"./functions/matrixDifference.js":18,"./functions/matrixProduct.js":19,"./functions/matrixSum.js":20,"./functions/max.js":21,"./functions/median.js":22,"./functions/min.js":23,"./functions/mode.js":24,"./functions/nthRoot.js":25,"./functions/phi.js":26,"./functions/power.js":27,"./functions/product.js":28,"./functions/quotient.js":29,"./functions/random.js":30,"./functions/remainder.js":31,"./functions/sign.js":32,"./functions/square.js":33,"./functions/stdev.js":34,"./functions/sum.js":35,"./functions/tau.js":36,"./functions/transpose.js":37,"./functions/type.js":38,"./functions/variance.js":39,"./functions/vectorAverage.js":40,"./functions/vectorDifference.js":41,"./functions/vectorProduct.js":42,"./functions/vectorQuotient.js":43,"./functions/vectorSum.js":44}]},{},[46]);
+},{"./functions/Date/index.js":2,"./functions/Geometry/index.js":4,"./functions/Math/index.js":8,"./functions/Matrix/index.js":16,"./functions/Physics/index.js":18,"./functions/Statistics/index.js":21,"./functions/String/index.js":29,"./functions/Unit/index.js":30,"./functions/Vector/index.js":31,"./functions/add.js":32,"./functions/average.js":33,"./functions/dimensions.js":35,"./functions/divide.js":36,"./functions/equal.js":37,"./functions/isFunction.js":40,"./functions/isMatrix.js":41,"./functions/isNegative.js":42,"./functions/isNumber.js":43,"./functions/isPositive.js":44,"./functions/isPrime.js":45,"./functions/isVector.js":46,"./functions/multiply.js":47,"./functions/pow.js":48,"./functions/product.js":49,"./functions/quotient.js":50,"./functions/subtract.js":51,"./functions/sum.js":52,"./functions/text.js":53,"./functions/type.js":54}]},{},[56]);

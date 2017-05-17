@@ -1,11 +1,7 @@
 (function() {
 	// change to a variable arg function
-	const equal = (a,b,options) => {
-			if(a===b) return true;
-			if(Array.isArray(a) && Array.isArray(b)) return arrayEqual(a,b,options);
-		},
-		arrayEqual = (a,b,options) => {
-			return a.length===b.length && a.every((item,i) => equal(item,b[i],options));
-		};
+	// change to support vector and matrices
+	const equal = (a,b) => a===b || (Array.isArray(a) && Array.isArray(b) && arrayEqual(a,b)),
+		arrayEqual = (a,b) => a.length===b.length && a.every((item,i) => equal(item,b[i]));
 	module.exports = equal;
 }).call(this);

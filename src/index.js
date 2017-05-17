@@ -120,19 +120,26 @@
 		me.calculating = 0;
 		Object.defineProperty(me,"oncalculated",{enumerable:false,configurable:true,writable:true,value:options.oncalculated});
 		
+		FUNCTIONS.Date = require("./functions/Date/index.js");
+		
+		FUNCTIONS.Geometry = require("./functions/Geometry/index.js");
+		
+		FUNCTIONS.Math = require("./functions/Math/index.js");
+		
+		FUNCTIONS.Matrix = require("./functions/Matrix/index.js");
+		FUNCTIONS.Physics = require("./functions/Physics/index.js");
+		FUNCTIONS.Statistics = require("./functions/Statistics/index.js");
+			
+		FUNCTIONS.String = require("./functions/String/index.js");
+		
+		FUNCTIONS.Unit = require("./functions/Unit/index.js");
+		FUNCTIONS.Vector = require("./functions/Vector/index.js");
+	
+		FUNCTIONS.add = require("./functions/add.js");
 		FUNCTIONS.average = require("./functions/average.js");
-		FUNCTIONS.count = require("./functions/count.js");
-		FUNCTIONS.cube = require("./functions/cube.js");
-		
 		FUNCTIONS.dimensions = require("./functions/dimensions.js");
-		FUNCTIONS.distance = require("./functions/distance.js");
-		
-		FUNCTIONS.dotProduct = require("./functions/dotProduct.js");
-		
+		FUNCTIONS.divide = require("./functions/divide.js");
 		FUNCTIONS.equal = require("./functions/equal.js");
-		
-		FUNCTIONS.factorial = require("./functions/factorial.js");
-		FUNCTIONS.intersection = require("./functions/intersection.js");
 		
 		FUNCTIONS.isFunction = require("./functions/isFunction.js");
 		FUNCTIONS.isMatrix = require("./functions/isMatrix.js");
@@ -142,37 +149,14 @@
 		FUNCTIONS.isPrime = require("./functions/isPrime.js");
 		FUNCTIONS.isVector = require("./functions/isVector.js");
 		
-		FUNCTIONS.madev = require("./functions/madev.js");
-		
-		FUNCTIONS.matrixDifference = require("./functions/matrixDifference.js");
-		FUNCTIONS.matrixProduct = require("./functions/matrixProduct.js");
-		FUNCTIONS.matrixSum = require("./functions/matrixSum.js");
-		FUNCTIONS.max = require("./functions/max.js");
-		FUNCTIONS.median = require("./functions/median.js");
-		FUNCTIONS.min = require("./functions/min.js");
-		FUNCTIONS.mode = require("./functions/mode.js");
-		FUNCTIONS.nthRoot = require("./functions/nthRoot.js");
-		
-		FUNCTIONS.phi = require("./functions/phi.js");
-		FUNCTIONS.power = require("./functions/power.js");
+		FUNCTIONS.multiply = require("./functions/multiply.js");
 		FUNCTIONS.product = require("./functions/product.js");
-		FUNCTIONS.random = require("./functions/random.js");
+		FUNCTIONS.power = FUNCTIONS.pow = require("./functions/pow.js");
 		FUNCTIONS.quotient = require("./functions/quotient.js");
-		FUNCTIONS.remainder = FUNCTIONS.difference = require("./functions/remainder.js");
-		FUNCTIONS.sign = require("./functions/sign.js");
-		FUNCTIONS.stdev = require("./functions/stdev.js");
-		FUNCTIONS.square = require("./functions/square.js");
+		FUNCTIONS.subtract = require("./functions/subtract.js");
 		FUNCTIONS.sum = require("./functions/sum.js");
-		FUNCTIONS.tau = require("./functions/tau.js");
-		FUNCTIONS.transpose = require("./functions/transpose.js");
+		FUNCTIONS.text = require("./functions/text.js");
 		FUNCTIONS.type = require("./functions/type.js");
-		FUNCTIONS.variance = require("./functions/variance.js");
-		FUNCTIONS.vectorAverage = require("./functions/vectorAverage.js");
-		FUNCTIONS.vectorDifference = require("./functions/vectorDifference.js");
-		FUNCTIONS.vectorProduct = require("./functions/vectorProduct.js");
-		FUNCTIONS.vectorQuotient = require("./functions/vectorQuotient.js");
-		FUNCTIONS.vectorSum = require("./functions/vectorSum.js");
-		
 		
 		FUNCTIONS.$ = function(coordinates,options) {
 			const values = [],
@@ -191,6 +175,11 @@
 				else results[option] = value;
 			}
 			return results;
+		}
+		FUNCTIONS.interval = function(i,value) {
+			const cell = CURRENTCELL;
+			setInterval(() => { cell.calc(); },i)
+			return "="+value;
 		}
 		FUNCTIONS.destructure = FUNCTIONS.varg = function(arg) {
 			VARGS.push(arg);
@@ -355,20 +344,9 @@
 			if(v.length===0) return 0;
 			return zscores(v); 
 		}
-		const mathdesc = Object.getOwnPropertyDescriptors(Math);
-		for(let key in mathdesc) {
-			if(FUNCTIONS[key] || FUNCTIONS[key.toLowerCase()]) continue;
-			if(typeof(Math[key])==="function") {
-				FUNCTIONS[key] = function() {
-					let v, options;
-					[v,options] = getargs([].slice.call(arguments,0));
-					if(options && options.if) v = v.filter(options.if);
-					return Math[key](...v);
-				}
-			} else {
-				FUNCTIONS[key.toLowerCase()] = () => Math[key];
-			}
-		}
+		
+		
+
 		me.functions = new Proxy(FUNCTIONS,{
 			set: function(target,property,value) {
 				if(typeof(value)!=="function") throw new Error("Hypercalc custom function must be a function: ", value);
@@ -402,6 +380,7 @@
 					return this.valueOf();
 				},
 				set: function(value) {
+					if(typeof(value)==="string" && value==parseFloat(value)) value = parseFloat(value);
 					this.data = value;
 					this.compile().calc();
 					return true;
@@ -439,7 +418,11 @@
 				if(me.compiled) {
 					const current = CURRENTCELL;
 					CURRENTCELL = me;
-					me.computed = me.compiled();
+					let value = me.compiled();
+					if(typeof(value)==="string" && value.indexOf("=")===0) {
+						value = new Function("return " + value.substring(1))()();
+					}
+					me.computed = value;
 					CURRENTCELL = current;
 				}
 				!me.options.oncalculated || me.options.oncalculated(me);

@@ -3,7 +3,6 @@
 		getArgs.VARGS = [];
 		const last = args[args.length-1],
 			options = (last && typeof(last)==="object" && !Array.isArray(last) ? last : null);
-		let values = [];
 		!options || (args = args.slice(0,args.length-1));
 		const result = [];
 		for(let i=0;i<args.length;i++) {
