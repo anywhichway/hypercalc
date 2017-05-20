@@ -1,0 +1,494 @@
+<html>
+<head>
+</head>
+<body>
+<script>
+ 
+// concatMap :: (a -> [b]) -> [a] -> [b]
+const concatMapReduce = (f,reduce) => xs => (reduce ? xs.map(f).reduce((x,y) => x.concat(y), []).reduce((accu,curr) => reduce(accu,curr)): xs.map(f).reduce((x,y) => x.concat(y), []))
+
+// id :: a -> a
+const id = x => x
+
+//flatten :: [[a]] -> [a]
+const shallowFlatten = concatMapReduce (id)
+
+// deepFlatten :: [[[a]]] -> [a]
+const deepFlatten = concatMapReduce (data => Array.isArray(data) ? deepFlatten(data) : data)
+
+const flatten = deep => (deep ? deepFlatten : shallowFlatten)();
+
+// flatten :: [[a]] -> [a]
+const shallowFlattenReduce = (array,reduce) => concatMapReduce (id,reduce)(array)
+
+// deepFlatten :: [[[a]]] -> [a]
+const deepFlattenReduce = (array,reduce) => concatMapReduce (data => Array.isArray(data) ? deepFlatten(data) : data,reduce)(array)
+
+const flattenReduce = (array,reduce,deep) => (deep ? deepFlattenReduce : shallowFlattenReduce)(array,reduce);
+
+function adjustUnits(unit,base,divide) {
+		const mainparts = unit.baseUnits.split("/"),
+			modifier = (divide ? -1 : 1),
+			numerator = mainparts[0].split(" ").filter(item => item!="1" && item!==""),
+			denominator = (mainparts[1] ? mainparts[1].split(" ").filter(item => item!="1" && item!=="") : []),
+			baseparts = base.split("/"),
+			basemap = {
+				numerator: (baseparts[(divide ? 1 :0)] || "").split(" ").filter(item => item!="1" && item!=="").reduce((accumulator,current) => { 
+					const parts = current.split("^"),
+						unit = parts[0],
+						power = (parts[1] ? parseFloat(parts[1]) : 1);
+					accumulator[unit] = power;
+					return accumulator;
+				},{}),
+				denominator: (baseparts[(divide ? 0 :1)] || "").split(" ").filter(item => item!="1" && item!="").reduce((accumulator,current) => { 
+					const parts = current.split("^"),
+						unit = parts[0],
+						power = (parts[1] ? parseFloat(parts[1]) : 1);
+					accumulator[unit] = power;
+					return accumulator;
+				},{})
+			},
+			used = {};
+			for(let i=0;i<numerator.length;i++) {
+				const subparts = numerator[i].split("^");
+				used[subparts[0]] = true;
+					subparts[1] = ((subparts[1] ? parseFloat(subparts[1]) : 1) + (basemap.numerator[subparts[0]] || 0)) - (basemap.denominator[subparts[0]] || 0);
+					if(subparts[1]===0) numerator.splice(i,1);
+					else if(subparts[1]===1) numerator[i] = subparts[0];
+					else numerator[i] = subparts.join("^");
+			}
+			for(let i=0;i<denominator.length;i++) {
+				const subparts = denominator[i].split("^");
+				used[subparts[0]] = true;
+					subparts[1] = ((subparts[1] ? parseFloat(subparts[1]) : 1) + (basemap.denominator[subparts[0]] || 0)) - (basemap.numerator[subparts[0]] || 0);
+					if(subparts[1]===0) denominator.splice(i,1);
+					else if(subparts[1]===1) denominator[i] = subparts[0];
+					else denominator[i] = subparts.join("^");
+			}
+			for(let unit in basemap.denominator) {
+				const power = basemap.denominator[unit];
+				used[unit] || denominator.push(power>1 ? unit+"^"+power : unit);
+			}
+			denominator.sort(); 
+			for(let unit in basemap.numerator) {
+				const power = basemap.numerator[unit];
+				used[unit] || numerator.push(power>1 ? unit+"^"+power : unit);
+			}
+			numerator.sort(); 
+		unit.baseUnits  = (numerator.length > 0 ? numerator.join(" ") : (denominator.length > 0 ? 1 : "")) + (denominator.length > 0 ? " / " + denominator.join(" ") : "");
+	}
+	function createUnit(value,scope=Object.create(Unit.prototype)) {
+		if(value && typeof(value)==="object" && value instanceof Unit) {
+			for(let key of ["value","units","baseUnits"]) scope[key] = value[key];
+			Object.defineProperty(scope,"constructor",{enumerable:false,configurable:true,writable:true,value:Unit});
+			return scope;
+		}
+		scope.value = value;
+		scope.units = {};
+		scope.baseUnits = "";
+		Object.defineProperty(scope,"constructor",{enumerable:false,configurable:true,writable:true,value:Unit});
+		return scope;
+	}
+	function Unit(value,unit) {
+		const type = typeof(value);
+		if((!this || !(this instanceof Unit)) && value && type==="object" && value instanceof Unit) {
+			return value;
+		} else if(type==="string") {
+			if((!this || !(this instanceof Unit))) {
+				return new Unit(value,unit);
+			}
+			const u = Unit.parse(value);
+			for(let key in u) {
+				this[key] = u[key];
+			}
+		} else if(type==="number") {
+			if((!this || !(this instanceof Unit))) {
+				return new Unit(value,unit);
+			}
+			createUnit(value,this);
+		} else {
+			throw new TypeError(`Can't create Unit from ${value}`);
+		}
+		if(unit) {
+			const base = Unit.getBase(unit);
+			if(base!==unit) this.value *= Unit.getConversion(unit,base);
+			this.baseUnits = base;
+			unit===this.baseUnits || (this.units[unit] = this.baseUnits);
+		}
+		Object.freeze(this);
+	}
+	Unit.conversions = {
+		cm: {
+			in: 2.54
+		},
+		ms: {
+			sec: 1000
+		}
+	}
+	Unit.add = function(a,b)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a + b;
+		a = createUnit(Unit(a)); // create a changeable Unit
+		b = Unit(b);
+		if(a.baseUnits===b.baseUnits || b.baseUnits==="") a.value += b.value
+		else throw new TypeError("Incompatible " + a + " + " + b);
+		return Object.freeze(a);
+	}
+	Unit.as = function(a,unit) {
+		if(typeof(a)==="string") a = Unit.parse(a);
+		const c = Unit.getConversion(a.baseUnits,unit);
+		if(typeof(c)==="number") return a.value * c;
+	}
+	Unit.divide = function(a,b)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a / b;
+		a = createUnit(Unit(a)); // create a changeable Unit
+		b = Unit(b);
+		if(a.baseUnits===b.baseUnits || Unit.isSimple(b)) {
+			a.value /= b.value;
+			if(b.baseUnits && b.baseUnits.length>0) adjustUnits(a,b.baseUnits,true);
+		} else throw new TypeError("Incompatible " + a + " / " + b);
+		return Object.freeze(a);
+	}
+	Unit.isSimple = function(a) {
+		return a instanceof Unit && a.baseUnits.indexOf(" ")===-1;
+	}
+	Unit.multiply = function(a,b)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a * b;
+		a = createUnit(Unit(a)); // create a changeable Unit
+		b = Unit(b);
+		if(a.baseUnits===b.baseUnits || Unit.isSimple(b)) {
+			a.value *= b.value;
+			if(b.baseUnits && b.baseUnits.length>0) adjustUnits(a,b.baseUnits);
+		} else throw new TypeError("Incompatible " + a + " * " + b);
+		return Object.freeze(a);
+	}
+	Unit.pow = function(a,b) {
+		if(typeof(a)==="number") return Math.pow(a,b);
+		a = createUnit(Unit(a)); // create a changeable Unit
+		a.value = Math.pow(a.value,b)
+		adjustUnits(a,a.baseUnits);	
+		return Object.freeze(a);
+	}
+	Unit.subtract = function(a,b)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a - b;
+		a = createUnit(Unit(a)); // create a changeable Unit
+		b = Unit(b);
+		a.constructor = Unit;
+		if(a.baseUnits===b.baseUnits || b.baseUnits==="") a.value -= b.value
+		else throw new TypeError("Incompatible " + a + " - " + b);
+		return Object.freeze(a);
+	}
+	Unit.to = function(a,unit) {
+		const parts = unit.split(" "),
+			a = createUnit(Unit(a));
+		for(let part of parts) {
+			if(part==="/") continue;
+			const base = Unit.getBase(part);
+			for(let unit in a.units) {
+				if(unit!==part && a.units[unit]===base) {
+					delete a.units[unit];
+					if(part!==base) a.units[part] = base;
+				}
+			}
+		}
+		return Object.freeze(a);
+	}
+	Unit.toJSON = function(a) {
+		return a.valueOf();
+	}
+	Unit.valueOf = function(a) {
+		let units = a.baseUnits,
+			value = a.value,
+			parts = units.split(" ");
+		for(let unit in a.units) {
+			const base = a.units[unit];
+			if(units.indexOf(base)>=0) { 
+				for(let part of parts) {
+					let multiplier = 1;
+					if(part.indexOf(base)===0) {
+						const subparts = part.split("^");
+						if(subparts[0]===base && subparts[1]) multiplier = parseFloat(subparts[1]);
+					}
+					value /= Math.pow(Unit.getConversion(base,unit),multiplier);
+					units = units.replace(new RegExp(base,"g"),unit);
+				}
+			}
+		}
+		return value + " " + units;
+	}
+	for(let key in Unit) {
+		if(typeof(Unit[key])==="function") Unit.prototype[key] = function() { return Unit[key](this,...arguments); }
+	}
+	Unit.getBase = function(unit) {
+		for(let base in Unit.conversions) {
+			if(base===unit || typeof(Unit.conversions[base][unit])==="number") return base;
+		}
+	}
+	Unit.getConversion = function(unit1,unit2) {
+		if(unit1===unit2) return 1;
+		let base = Unit.getBase(unit1);
+		if(base && Unit.conversions[base][unit2]) return Unit.conversions[base][unit2];
+		base = Unit.getBase(unit2);
+		if(base && Unit.conversions[base][unit1]) return 1 / Unit.conversions[base][unit1];
+	}
+	Unit.parse = function(string) {
+		const unit = createUnit(),
+			parts = string.split(" ");
+		unit.value = parseFloat(parts[0]);
+		for(let i=1;i<parts.length;i++) {
+			const part = parts[i];
+			if(part!=="/") {
+				const subparts = part.split("^");
+				const base = Unit.getBase(subparts[0]);
+				if(part!==base) {
+					unit.units[subparts[0]] = base;
+					unit.value *= Unit.conversions[base][subparts[0]];
+				}
+				unit.baseUnits += (unit.baseUnits.length>0 ? " " : "") + base;
+			} else unit.baseUnits += " / ";
+		}
+		return Object.freeze(unit);
+	}
+
+const add = (a,b) => {
+	return Unit.add(a,b);
+}
+const divide = (a,b) => {
+	return Unit.divide(a,b);
+}
+const multiply = (a,b) => {
+	return Unit.multiply(a,b);
+}
+const pow = (a,b) => {
+	return Unit.pow(a,b);
+}
+const subtract = (a,b) => {
+	return Unit.subtract(a,b);
+}
+function difference() {
+	return add(flattenReduce([].slice.call(arguments),subtract,true),0);
+}
+function product() {
+	return add(flattenReduce([].slice.call(arguments),multiply,true),0);
+}
+function quotient() {
+	return add(flattenReduce([].slice.call(arguments),divide,true),0);
+}
+function sumSquares() {
+	return ad(flattenReduce([].slice.call(arguments),(a,b) => add(a,multiply(b*b)),true),0);
+}
+function sum() {
+	return add(flattenReduce([].slice.call(arguments),add,true),0);
+}
+
+
+
+function array_equals(a, b)
+{
+  return a.length === b.length && a.every(function(value, index) {
+    return value === b[index];
+  });
+};
+
+function getdim(arr)
+{
+  if (!Array.isArray(arr)) {
+    return []; // current array has no dimension
+  }
+  var dim = arr.reduce(function(result, current) {
+    // check each element of arr against the first element
+    // to make sure it has the same dimensions
+    return array_equals(result, getdim(current)) ? result : false;
+  }, getdim(arr[0]));
+
+  // dim is either false or an array
+  return dim && [arr.length].concat(dim);
+}
+
+function Vector() {
+	
+}
+Vector.reduce = function(args,f) {
+	return args.reduce((accumulator,current) => {
+		for(let i=0;i<accumulator.length;i++) accumulator[i] = f(accumulator[i],Array.isArray(current) ? current[i] : current);
+		return accumulator;
+	});
+}
+Vector.map = function(args,f) {
+	return args.map(f);
+}
+Vector.add = function() {
+	return Vector.reduce([].slice.call(arguments),(a,b) => a + b);
+}
+Vector.crossProduct = function() {
+	const cp = (x,y) => 
+		[x[1]*y[2]-x[2]*y[1],
+		x[2]*y[0]-x[0]*y[2],
+		x[0]*y[1]-x[1]*y[0]];
+	return [].slice.call(arguments).reduce((accumulator,current) => cp(accumulator,current));
+}
+Vector.divide = function() {
+	return Vector.reduce([].slice.call(arguments),divide);
+}
+Vector.dotProduct = function() {
+	return Vector.reduce([].slice.call(arguments),multiply).reduce(add);
+}
+Vector.multiply = function() {
+	return Vector.reduce([].slice.call(arguments),multiply);
+}
+Vector.pow = function() {
+	return Vector.reduce([].slice.call(arguments),pow);
+}
+Vector.subtract = function() {
+	return Vector.reduce([].slice.call(arguments),subtract);
+}
+
+
+function array_equals(a, b)
+{
+  return a.length === b.length && a.every(function(value, index) {
+    return value === b[index];
+  });
+};
+
+function getdim(arr)
+{
+  if (!Array.isArray(arr)) {
+    return []; // current array has no dimension
+  }
+  var dim = arr.reduce(function(result, current) {
+    // check each element of arr against the first element
+    // to make sure it has the same dimensions
+    return array_equals(result, getdim(current)) ? result : false;
+  }, getdim(arr[0]));
+
+  // dim is either false or an array
+  return dim && [arr.length].concat(dim);
+}
+function Matrix() {
+	
+}
+Matrix.add = function() {
+	return [].slice.call(arguments).reduce((accumulator,current) => {
+		for(let i=0;i<accumulator.length;i++) accumulator[i] = Vector.add(accumulator[i],Array.isArray(current) ? current[i] : current);
+		return accumulator;
+	});
+}
+Matrix.divide = function() {
+	return [].slice.call(arguments).reduce((accumulator,current) => {
+		for(let i=0;i<accumulator.length;i++) accumulator[i] = Vector.divide(accumulator[i],Array.isArray(current) ? current[i] : current);
+		return accumulator;
+	});
+}
+Matrix.dimensions = getdim;
+Matrix.invert = function(m) {
+	function inverse(_A) {
+	    var temp,
+	    N = _A.length,
+	    E = [];
+	   
+	    for (var i = 0; i < N; i++)
+	      E[i] = [];
+	   
+	    for (i = 0; i < N; i++)
+	      for (var j = 0; j < N; j++) {
+	        E[i][j] = 0;
+	        if (i == j)
+	          E[i][j] = 1;
+	      }
+	   
+	    for (var k = 0; k < N; k++) {
+	      temp = _A[k][k];
+	   
+	      for (var j = 0; j < N; j++)
+	      {
+	        _A[k][j] /= temp;
+	        E[k][j] /= temp;
+	      }
+	   
+	      for (var i = k + 1; i < N; i++)
+	      {
+	        temp = _A[i][k];
+	   
+	        for (var j = 0; j < N; j++)
+	        {
+	          _A[i][j] -= _A[k][j] * temp;
+	          E[i][j] -= E[k][j] * temp;
+	        }
+	      }
+	    }
+	   
+	    for (var k = N - 1; k > 0; k--)
+	    {
+	      for (var i = k - 1; i >= 0; i--)
+	      {
+	        temp = _A[i][k];
+	   
+	        for (var j = 0; j < N; j++)
+	        {
+	          _A[i][j] -= _A[k][j] * temp;
+	          E[i][j] -= E[k][j] * temp;
+	        }
+	      }
+	    }
+	   
+	    for (var i = 0; i < N; i++)
+	      for (var j = 0; j < N; j++)
+	        _A[i][j] = E[i][j];
+	    return _A;
+	  }
+	return inverse(a);
+}
+Matrix.multiply = function() {
+	return [].slice.call(arguments).reduce((accumulator,current) => {
+		for(let i=0;i<accumulator.length;i++) accumulator[i] = Vector.multiply(accumulator[i],Array.isArray(current) ? current[i] : current);
+		return accumulator;
+	});
+}
+Matrix.pow = function(m,pow) {
+	while(pow-->1) {
+		m = Matrix.product(m,m.slice(0));
+	}
+	return m;
+}
+Matrix.product = function(a,b) {
+	return a.map((x,i) => Matrix.transpose(b.slice(0)).map((y) => Vector.dotProduct(x.slice(0), y.slice(0))));
+}
+Matrix.subtract = function() {
+	return [].slice.call(arguments).reduce((accumulator,current) => {
+		for(let i=0;i<accumulator.length;i++) accumulator[i] = Vector.subtract(accumulator[i],Array.isArray(current) ? current[i] : current);
+		return accumulator;
+	});
+}
+Matrix.transpose = function(m) {
+	return m[0].map((x,i) => m.map((y,k) => y[i]));
+}
+
+
+
+console.log(sum(1,1,1,1,1,1));
+console.log(sum([1,1,1,1,1,1]));
+console.log(sum([[1,1,1],[1,1,1]]));
+console.log(sum([[[1,1,1],[1,1,1]]]));
+
+console.log(sum("1 in","1 in"));
+console.log(pow("1 in",2));
+console.log(sum("1 in").valueOf());
+console.log(pow("1 in",2).valueOf());
+
+console.log(Vector.dotProduct([2,2],[2,2]));
+console.log(Vector.crossProduct([1,2,3],[3,2,1]));
+console.log(Vector.add([1,1],[1,1],[1,1]));
+console.log(Vector.pow([1,2],[1,2],[1,2]));
+console.log(Matrix.add([[1,1],[1,1]],[[1,1],[1,1]]));
+console.log(Matrix.multiply([[1,1],[1,1]],[[1,1],[1,1]]));
+console.log(Matrix.multiply([[1,1],[1,1]],[[1,1],[1,1]],2));
+console.log(Matrix.transpose([[1,2,3]]));
+console.log(Matrix.transpose([[1],[2],[3]]));
+console.log(Matrix.product([[1,2,3]],[[1],[2],[3]]));
+console.log(Matrix.product([[1],[2],[3]],[[1,2,3]]));
+console.log(Matrix.pow([[1,2,3],[1,2,3],[1,2,3]],2));
+
+
+</script>
+</body>
+</html>

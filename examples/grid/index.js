@@ -7,14 +7,14 @@ const hc = new Hypercalc(),
 	tab2 = new hc.Sheet("Tab2",{columns:{A:{},B:{},C:{}}}),
 	tab3 = new hc.Sheet("Tab3",{columns:{A:{},B:{},C:{}}});
 
-summary.createCell("Sum Tab 1 Row 1","=sum($('Tab1.*.1'))");
-summary.createCell("Sum Tab 1 Row 1 and 2","=sum($('Tab1.*.1:2'))");
-summary.createCell("Sum Tab 1","=sum($('Tab1.*.*'))");
-summary.createCell("Sum Tab 1 or Tab 3 Column A","=sum($('Tab1|Tab3.A.*'))");
-summary.createCell("Sum All Tabs Column A","=sum($('*.A.*'))");
-summary.createCell("Sum All Tabs Row 1","=sum($('*.*.1'))");
-summary.createCell("Sum Cube","=sum($('*.*.*'))");
-summary.createCell("Dot Product","=dotProduct($('Tab2.*.1'),$('Tab3.*.1'))");
+summary.createCell("Sum Tab 1 Row 1","=sum($(Tab1.*.1))");
+summary.createCell("Sum Tab 1 Row 1 and 2","=sum($(Tab1.*.1:2))");
+summary.createCell("Sum Tab 1","=sum($(Tab1.*.*))");
+summary.createCell("Sum Tab 1 or Tab 3 Column A","=sum($(Tab1|Tab3.A.*))");
+summary.createCell("Sum All Tabs Column A","=sum($(*.A.*))");
+summary.createCell("Sum All Tabs Row 1","=sum($(*.*.1))");
+summary.createCell("Sum Cube","=sum($(*.*.*))");
+summary.createCell("Dot Product","=Vector.dotProduct($(Tab2.*.1),$(Tab3.*.1))");
 
 tab1.import([
 	[1,1,1],

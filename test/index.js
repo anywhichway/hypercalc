@@ -5,7 +5,143 @@ if(typeof(module)==="object") {
 
 const hc = new Hypercalc();
 
+const arrayFunctions = {
+		"countSimple": {name:"count", arguments: [1,2,3,4,5,6], expect: 6},
+		"countComplex": {name:"count", arguments: [[1,[2,3],4],5,6], expect: 6},
+		"dimensions": {name:"dimensions", arguments: [[[1,2,3],[1,2,3]]], expect: [2,3]},
+		"flattenArray": {name:"flatten", arguments: [[1,[2,3],4]], expect: [1,2,3,4]},
+		"flattenArrayShallow": {name:"flatten", arguments: [[1,[[2],3],4]], expect: [1,[2],3,4]},
+		"flattenArrayDeep": {name:"flatten", arguments: [[1,[2,3],4],1,true], expect: [1,2,3,4]},
+		"join": {name:"join", arguments: [[1,[2,3],4],1,","], expect: "1,2,3,4,1"}
+}
+describe("<tr><th colspan='3' align='left'>Array Functions (work on Vectors and Matrices)</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+	for(let name in arrayFunctions) {
+		const arguments = (arrayFunctions[name].arguments ? arrayFunctions[name].arguments : []),
+			result = arrayFunctions[name].expect;
+		!arrayFunctions[name].name || (name = arrayFunctions[name].name);
+		let formula = "="+name+"(";
+			for(let i=0;i<arguments.length;i++) {
+				formula += JSON.stringify(arguments[i]);
+				if(i<arguments.length-1) formula += ",";
+			}
+			formula += ")";
+		const title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + JSON.stringify(result) + "</td></tr>";
+		it(title,function(done) {
+			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(JSON.stringify(cell.value),JSON.stringify(result))); }});
+		})
+	}
+});
+
 const arithmeticFunctions = {
+		"add": {name:"add", arguments: [2,1], expect: 3},
+		"adda": {name:"adda", arguments: [2,1], expect: 3},
+		"addaTrue": {name:"adda", arguments: [2,true], expect: 3},
+		"addaFalse": {name:"adda", arguments: [2,false], expect: 2},
+		"addUnit": {name:"add", arguments: [new hc.functions.Unit(2,"in"),new hc.functions.Unit("2 in")], expect: new hc.functions.Unit(4,"in")},
+		"divide": {name:"divide", arguments: [2,1], expect: 2},
+		"dividea": {name:"dividea", arguments: [2,1], expect: 2},
+		"divideaTrue": {name:"dividea", arguments: [2,true], expect: 2},
+		"divideaFalse": {name:"dividea", arguments: [2,false], expect: Infinity},
+		"divideUnit": {name:"divide", arguments: [new hc.functions.Unit(2,"in"),new hc.functions.Unit("2 in")], expect: 1},
+		"multiply": {name:"multiply", arguments: [2,1], expect: 2},
+		"multiplya": {name:"multiplya", arguments: [2,1], expect: 2},
+		"multiplyaTrue": {name:"multiplya", arguments: [2,true], expect: 2},
+		"multiplyaFalse": {name:"multiplya", arguments: [2,false], expect: 0},
+		"multiplyUnit": {name:"multiply", arguments: [new hc.functions.Unit(2,"in"),new hc.functions.Unit("2 in")], expect: "4 in^2"},
+		"product": {name:"product", arguments: [3,2,1], expect: 6},
+		"producta": {name:"producta", arguments: [3,2,1], expect: 6},
+		"productaTrue": {name:"producta", arguments: [3,2,true], expect: 6},
+		"productaFalse": {name:"producta", arguments: [3,2,false], expect: 0},
+		"productUnit": {name:"product", arguments: [new hc.functions.Unit(2,"in"),new hc.functions.Unit("2 in"),new hc.functions.Unit("2 in")], expect: "8 in^3"},
+		"subtract": {name:"subtract", arguments: [2,1], expect: 1},
+		"subtracta": {name:"subtracta", arguments: [2,1], expect: 1},
+		"subtractaTrue": {name:"subtracta", arguments: [2,true], expect: 1},
+		"subtractaFalse": {name:"subtracta", arguments: [2,false], expect: 2},
+		"subtractUnit": {name:"subtract", arguments: [new hc.functions.Unit(2,"in"),new hc.functions.Unit("2 in")], expect: new hc.functions.Unit(0,"in")},
+		"sum": {name:"sum", arguments: [3,2,1], expect: 6},
+		"suma": {name:"suma", arguments: [3,2,1], expect: 6},
+		"sumaTrue": {name:"suma", arguments: [3,2,true], expect: 6},
+		"sumaFalse": {name:"suma", arguments: [3,2,false], expect: 5},
+		"sumUnit": {name:"sum", arguments: [new hc.functions.Unit(2,"in"),new hc.functions.Unit("2 in"),new hc.functions.Unit("2 in")], expect: "6 in"},
+}
+describe("<tr><th colspan='3' align='left'>Arithmetic Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+	for(let name in arithmeticFunctions) {
+		const arguments = (arithmeticFunctions[name].arguments ? arithmeticFunctions[name].arguments : []),
+			result = arithmeticFunctions[name].expect;
+		!arithmeticFunctions[name].name || (name = arithmeticFunctions[name].name);
+		let formula = "="+name+"(";
+			for(let i=0;i<arguments.length;i++) {
+				formula += JSON.stringify(arguments[i]);
+				if(i<arguments.length-1) formula += ",";
+			}
+			formula += ")";
+		const title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
+		it(title,function(done) {
+			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value.valueOf(),result.valueOf())); }});
+		})
+	}
+});
+
+
+const date = new Date(),
+	now = date.getTime(),
+	utc = Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDay(),date.getUTCHours(),date.getUTCMinutes(),date.getUTCSeconds(),date.getUTCMilliseconds());
+	dateFunctions = {
+		"dayOfMonth": {arguments:[date], expect:date.getDate()},
+		"day": {arguments:[date], expect:date.getDay()},
+		"fullYear": {arguments:[date], expect:date.getFullYear()},
+		"hours": {arguments:[date], expect:date.getHours()},
+		"milliseconds": {arguments:[date], expect:date.getMilliseconds()},
+		"minutes": {arguments:[date], expect:date.getMinutes()},
+		"month": {arguments:[date], expect:date.getMonth()},
+		"seconds": {arguments:[date], expect:date.getSeconds()},
+		"Time": {arguments:[date], expect:date.getTime()},
+		"timezoneOffset": {arguments:[date], expect:date.getTimezoneOffset()},
+		"year": {arguments:[date], expect:date.getYear()},
+		"UTCDate": {arguments:[date], expect:date.getUTCDate()},
+		"UTCDay": {arguments:[date], expect:date.getUTCDay()},
+		"UTCFullYear": {arguments:[date], expect:date.getUTCFullYear()},
+		"UTCHours": {arguments:[date], expect:date.getUTCHours()},
+		"UTCMilliseconds": {arguments:[date], expect:date.getUTCMilliseconds()},
+		"UTCMinutes": {arguments:[date], expect:date.getUTCMinutes()},
+		"UTCMonth": {arguments:[date], expect:date.getUTCMonth()},
+		"UTCSeconds": {arguments:[date], expect:date.getUTCSeconds()},
+		"now": "special handling",
+		"toDateString": {arguments:[date], expect:date.toDateString()},
+		"toISOString": {arguments:[date], expect:date.toISOString()},
+		"toLocaleString": {arguments:[date,{hour12:false}], expect:date.toLocaleString({hour12:false})},
+		"toLocaleDateString": {arguments:[date], expect:date.toLocaleDateString()},
+		"toTimeString": {arguments:[date], expect:date.toTimeString()},
+		"toUTCString": {arguments:[date], expect:date.toUTCString()},
+		"UTC": {arguments: [date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDay(),date.getUTCHours(),date.getUTCMinutes(),date.getUTCSeconds(),date.getUTCMilliseconds()], expect: utc}
+	}
+describe("<tr><th colspan='3' align='left'>Date Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+	for(let name in dateFunctions) {
+		if(name==="now") {
+			const formula = "=now()",
+				title = "<tr><td>" + "now" + "</td><td>" + formula + "</td><td>" + Date.now() + "</td></tr>";
+			it(title,function(done) {
+				hc.Cell("now",formula,{oncalculated:(cell) => { done(assert.equal(cell.value.valueOf(),Date.now())); }});
+			})
+		} else {
+			const arguments = (dateFunctions[name].arguments ? dateFunctions[name].arguments : [3.5]),
+				result = (typeof(dateFunctions[name].expect)==="function" ? dateFunctions[name].expect() : dateFunctions[name].expect);
+			!dateFunctions[name].name || (name = dateFunctions[name].name);
+			let formula = "=Date."+name+"(";
+				for(let i=0;i<arguments.length;i++) {
+					formula += (typeof(arguments[i])==="function" ? arguments[i]() : JSON.stringify(arguments[i]));
+					if(i<arguments.length-1) formula += ",";
+				}
+				formula += ")";
+			const title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
+			it(title,function(done) {
+				hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value,result));}});
+			})
+		}
+	}
+});
+
+const mathFunctions = {
 		"Math.abs": {arguments: [-3.5], expect: 3.5},
 		"Math.ceil": Math.ceil(3.5),
 		"Math.cbrt": {arguments: [27], expect: 3},
@@ -17,16 +153,16 @@ const arithmeticFunctions = {
 		"Math.sqrt": Math.sqrt(3.5),
 		"Math.square": 3.5 * 3.5,
 }
-describe("<tr><th colspan='3' align='left'>Arithmetic Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
-	for(let name in arithmeticFunctions) {
-		const arguments = (arithmeticFunctions[name].arguments ? arithmeticFunctions[name].arguments : [3.5]);
+describe("<tr><th colspan='3' align='left'>Math Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+	for(let name in mathFunctions) {
+		const arguments = (mathFunctions[name].arguments ? mathFunctions[name].arguments : [3.5]);
 		let formula = "="+name+"(";
 			for(let i=0;i<arguments.length;i++) {
 				formula += JSON.stringify(arguments[i]);
 				if(i<arguments.length-1) formula += ",";
 			}
 			formula += ")";
-		const result = (typeof(arithmeticFunctions[name])==="object" ? arithmeticFunctions[name].expect : arithmeticFunctions[name]),
+		const result = (typeof(mathFunctions[name])==="object" ? mathFunctions[name].expect : mathFunctions[name]),
 			title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
 		it(title,function(done) {
 			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value,result)); }});
@@ -51,6 +187,27 @@ describe("<tr><th colspan='3' align='left'>Geometry Functions</th></tr><tr><th a
 			title = "<tr><td>" + geometryFunctions[name].name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
 		it(title,function(done) {
 			hc.Cell(name,formula,{oncalculated:(cell) => {  done(assert.equal(JSON.stringify(cell.value),result)); }});
+		})
+	}
+});
+
+const mathConstants = {
+		e: {expect: Math.E},
+		ln2: {expect: Math.LN2},
+		ln10: {expect: Math.LN10},
+		log2e: {expect: Math.LOG2E},
+		log10e: {expect: Math.LOG10E},
+		phi: {expect: (1 + Math.sqrt(5)) / 2},
+		pi: {expect: Math.PI},
+		tau: {expect: 2 * Math.PI},
+}
+describe("<tr><th colspan='3' align='left'>Constants (Also available as Math.&lt;function&gt;)</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+	for(let name in mathConstants) {
+		const formula = "="+name+"()",
+			result = (typeof(mathConstants[name])==="object" ? mathConstants[name].expect : mathConstants[name]),
+			title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
+		it(title,function(done) {
+			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value,result)); }});
 		})
 	}
 });
@@ -104,13 +261,13 @@ describe("<tr><th colspan='3' align='left'>Matrix Functions</th></tr><tr><th ali
 });
 
 const physicsFunctions = {
-		"Physics.planks": {expect: 6.626070040 * Math.pow(10,34)},
-		"Physics.c": {expect: 299792458},
-		"Physics.e": {expect: 1.6021766208},
+		"Physics.planks": {expect: hc.functions.Unit.parse((6.626070040 * Math.pow(10,34)) + " m^2 kg / s")},
+		"Physics.c": {expect: hc.functions.Unit.parse("299792458 m / s")},
+		//"Physics.e": {expect: (1.6021766208*(Math.pow(10,-91))) + " coulombs"},
 }
 describe("<tr><th colspan='3' align='left'>Physics Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name in physicsFunctions) {
-		const arguments = (physicsFunctions[name].arguments ? physicsFunctions[name].arguments : [3.5]);
+		const arguments = (physicsFunctions[name].arguments ? physicsFunctions[name].arguments : []);
 		let formula = "="+name+"(";
 			for(let i=0;i<arguments.length;i++) {
 				formula += JSON.stringify(arguments[i]);
@@ -120,17 +277,51 @@ describe("<tr><th colspan='3' align='left'>Physics Functions</th></tr><tr><th al
 		const result = (typeof(physicsFunctions[name])==="object" ? physicsFunctions[name].expect : physicsFunctions[name]),
 			title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
 		it(title,function(done) {
+			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value.valueOf(),result.valueOf())); }});
+		})
+	}
+});
+
+const predicateFunctions = {
+		"isFunctionTrue": {name:"isFunction", arguments: [function() {}], expect: true},
+		"isFunctionFalse": {name:"isFunction", arguments: [1], expect: false},
+		"isMatrixTrue": {name:"isMatrix", arguments: [[[1]]], expect: true},
+		"isMatrixFalse": {name:"isMatrix", arguments: [[1]], expect: false},
+		"isNumberTrue": {name:"isNumber", arguments: [1], expect: true},
+		"isNumberFalse": {name:"isNumber", arguments: ["a"], expect: false},
+		"isNegativeTrue": {name:"isNegative", arguments: [-1], expect: true},
+		"isNegativeFalse": {name:"isNegative", arguments: [1], expect: false},
+		"isPositiveTrue": {name:"isPositive", arguments: [1], expect: true},
+		"isPositiveFalse": {name:"isPositive", arguments: [-1], expect: false},
+		"isPrimeTrue": {name:"isPrime", arguments: [3], expect: true},
+		"isPrimeFalse": {name:"isPrime", arguments: [4], expect: false},
+		"isVectorTrue": {name:"isVector", arguments: [[1]], expect: true},
+		"isVectorFalse": {name:"isVector", arguments: [[[1]]], expect: false}
+}
+describe("<tr><th colspan='3' align='left'>Predicate Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+	for(let name in predicateFunctions) {
+		const arguments = (predicateFunctions[name].arguments ? predicateFunctions[name].arguments : [3.5]),
+			result = predicateFunctions[name].expect;
+		!predicateFunctions[name].name || (name = predicateFunctions[name].name);
+		let formula = "="+name+"(";
+			for(let i=0;i<arguments.length;i++) {
+				formula += (typeof(arguments[i])==="function" ? arguments[i]+"" : JSON.stringify(arguments[i]));
+				if(i<arguments.length-1) formula += ",";
+			}
+			formula += ")";
+		const title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
+		it(title,function(done) {
 			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value,result)); }});
 		})
 	}
 });
 
 const probabiltycFunctions = {
-	factorial: {name:"Math.factorial", arguments: [4],expect: 1* 2 * 3 *4},
+	factorial: {name:"factorial",arguments: [4],expect: 1* 2 * 3 *4},
 	randomFloat: {name:"Math.random", arguments: [],expect: arg => arg>=0 && arg<=1  },
 	randomInt: {name:"Math.random", arguments: [1,2],expect: arg => arg>=1 && arg<=2 },
 }
-describe("<tr><th colspan='3' align='left'>Probability Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+describe("<tr><th colspan='3' align='left'>Probability Functions (Also available as Math.&lt;function&gt;)</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name in probabiltycFunctions) {
 		let formula = "="+probabiltycFunctions[name].name+"(";
 		for(let i=0;i<probabiltycFunctions[name].arguments.length;i++) {
@@ -160,11 +351,11 @@ const statisticalFunctions = {
 		variance: 2.5306122448979593,
 		madev: 1.3469387755102038
 }
-describe("<tr><th colspan='3' align='left'>Statistical Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+describe("<tr><th colspan='3' align='left'>Statistical Functions  (Also available as Statistics.&lt;function&gt;)</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name in statisticalFunctions) {
-		const formula = "=Statistics."+name+"(1,2,3,3,4,5,6)",
+		const formula = "="+name+"(1,2,3,3,4,5,6)",
 			result = statisticalFunctions[name],
-			title = "<tr><td>Statistics." + name + "</td><td>" + formula + "</td><td>" + (Array.isArray(result) ? JSON.stringify(result) : result) + "</td></tr>";
+			title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + (Array.isArray(result) ? JSON.stringify(result) : result) + "</td></tr>";
 		it(title,function(done) {
 			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value+"",result+"")); }});
 		})
@@ -172,31 +363,37 @@ describe("<tr><th colspan='3' align='left'>Statistical Functions</th></tr><tr><t
 });
 
 const stringFunctions = {
+	reverse: {arguments: ["abc"], expect: "cba"},
+	split: {arguments: ["a.b.c"], expect: "a.b.c".split()},
+	substring: {arguments: ["abcdefg",1,4], expect: "abcdefg".substring(1,4)},
+	trim: {arguments: [" abc "], expect: " abc ".trim()},
+	trimLeft: {arguments: [" abc "], expect: " abc ".trimLeft()},
+	trimRight: {arguments: [" abc "], expect: " abc ".trimRight()},
 	toLowerCase: {arguments: ["LOWER"], expect: "LOWER".toLowerCase()},
 	toUpperCase: {arguments: ["upper"], expect: "upper".toUpperCase()}
 }
-describe("<tr><th colspan='3' align='left'>String Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+describe("<tr><th colspan='3' align='left'>String Functions (Also available as String.&lt;function&gt;)</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name in stringFunctions) {
 		const arguments = (stringFunctions[name].arguments ? stringFunctions[name].arguments : [3.5]);
-		let formula = "=String."+name+"(";
+		let formula = "="+name+"(";
 			for(let i=0;i<arguments.length;i++) {
 				formula += JSON.stringify(arguments[i]);
 				if(i<arguments.length-1) formula += ",";
 			}
 			formula += ")";
 		const result = (typeof(stringFunctions[name])==="object" ? stringFunctions[name].expect : stringFunctions[name]),
-			title = "<tr><td>String." + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
+			title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
 		it(title,function(done) {
-			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value,result)); }});
+			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(JSON.stringify(cell.value),JSON.stringify(result))); }});
 		})
 	}
 });
 
 
 const trigonometryFunctions = ["abs","acos","acosh","asin","asinh","atan","atanh","cos","cosh","sin","sinh","tan","tanh"];
-describe("<tr><th colspan='3' align='left'>Trigonometry Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+describe("<tr><th colspan='3' align='left'>Trigonometry Functions (Also available as Math.&lt;function&gt;)</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name of trigonometryFunctions) {
-		const fname = "Math." + (Array.isArray(name) ? name[0] : name),
+		const fname = (Array.isArray(name) ? name[0] : name),
 			mname = (Array.isArray(name) ? name[1] : name),
 			formula = "="+fname+"(1)",
 			result = Math[mname](1),
@@ -209,7 +406,16 @@ describe("<tr><th colspan='3' align='left'>Trigonometry Functions</th></tr><tr><
 
 const unitFunctions = {
 	addSame: {name:"Unit.add",arguments: ["1 cm","1 cm"], expect: new hc.functions.Unit(2,"cm")},
-	addDifferent: {name:"Unit.add",arguments: ["1 in","2.54 cm"], expect: new hc.functions.Unit(2,"in")}
+	addDifferent: {name:"Unit.add",arguments: ["1 in","2.54 cm"], expect: new hc.functions.Unit(2,"in")},
+	divide: {name:"Unit.divide",arguments: ["1 cm","1 cm"], expect: 1},
+	equalSame: {name:"Unit.equal",arguments: ["1 cm","1 cm"], expect: true},
+	equalDifferent1: {name:"Unit.equal",arguments: ["2.54 cm","1 in"], expect: true},
+	equalDifferent2: {name:"Unit.equal",arguments: ["1 in","2.54 cm"], expect: true},
+	max: {name:"Unit.max",arguments: ["1 in","1 cm"], expect: hc.functions.Unit(1,"in")},
+	min: {name:"Unit.min",arguments: ["1 in","1 cm"], expect: hc.functions.Unit(1,"cm")},
+	multiply: {name:"Unit.multiply",arguments: ["1 cm","1 cm"], expect: "1 cm^2"},
+	subtractSame: {name:"Unit.subtract",arguments: ["1 cm","1 cm"], expect: new hc.functions.Unit(0,"cm")},
+	subtractDifferent: {name:"Unit.subtract",arguments: ["1 in","2.54 cm"], expect: new hc.functions.Unit(0,"in")},
 }
 describe("<tr><th colspan='3' align='left'>Unit Functions</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
 	for(let name in unitFunctions) {
@@ -227,6 +433,26 @@ describe("<tr><th colspan='3' align='left'>Unit Functions</th></tr><tr><th align
 	}
 });
 
+const utilityFunctions = {
+		"numberEqual": {name:"equal", arguments: [1,1], expect: true}
+}
+describe("<tr><th colspan='3' align='left'>Utility Functions (work on Vectors and Matrices)</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
+	for(let name in utilityFunctions) {
+		const arguments = (utilityFunctions[name].arguments ? utilityFunctions[name].arguments : []),
+			result = utilityFunctions[name].expect;
+		!utilityFunctions[name].name || (name = utilityFunctions[name].name);
+		let formula = "="+name+"(";
+			for(let i=0;i<arguments.length;i++) {
+				formula += JSON.stringify(arguments[i]);
+				if(i<arguments.length-1) formula += ",";
+			}
+			formula += ")";
+		const title = "<tr><td>" + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
+		it(title,function(done) {
+			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(JSON.stringify(cell.value),JSON.stringify(result))); }});
+		})
+	}
+});
 const vectorFunctions = {
 		vectorAverage: {
 			name: "Vector.average",
@@ -296,26 +522,7 @@ describe("<tr><th colspan='3' align='left'>Vector Functions</th></tr><tr><th ali
 });
 
 
-const constants = {
-		e: {expect: Math.E},
-		ln2: {expect: Math.LN2},
-		ln10: {expect: Math.LN10},
-		log2e: {expect: Math.LOG2E},
-		log10e: {expect: Math.LOG10E},
-		phi: {expect: (1 + Math.sqrt(5)) / 2},
-		pi: {expect: Math.PI},
-		tau: {expect: 2 * Math.PI},
-}
-describe("<tr><th colspan='3' align='left'>Constants</th></tr><tr><th align='left'>Name</th><th align='left'>Example</th><th align='left'>Result</th></tr>", function() {
-	for(let name in constants) {
-		const formula = "=Math."+name+"()",
-			result = (typeof(constants[name])==="object" ? constants[name].expect : constants[name]),
-			title = "<tr><td>Math." + name + "</td><td>" + formula + "</td><td>" + result + "</td></tr>";
-		it(title,function(done) {
-			hc.Cell(name,formula,{oncalculated:(cell) => { done(assert.equal(cell.value,result)); }});
-		})
-	}
-});
+
 
 
 /*

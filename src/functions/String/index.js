@@ -6,4 +6,5 @@
 			module.exports[key] = function() { return String.prototype[key].call(...arguments); }
 		}
 	}
+	module.exports.reverse = string => string.split("").reverse().join("");
 }).call(this);

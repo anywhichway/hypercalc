@@ -5,7 +5,7 @@ const hc = new Hypercalc(),
   tab3 = new hc.Sheet("Tab3",{columns:{A:{},B:{},C:{}}});
 summary.createCell("1.1","=extend(['','A',''],['','B',''],['','C',''])");
 summary.createCell("1.2", "=extend(['min','avg','max'],['min','avg','max'],['min','avg','max'])");
-summary.createCell("1.3","=extend($summary('*.A.*'),$summary('*.B.*'),$summary('*.C.*'))");
+summary.createCell("1.3","=extend($summary(*.A.*),$summary(*.B.*),$summary(*.C.*))");
 tab1.import([[8,4,6],[2,6,4]]);
 tab2.import([[4,8,2],[6,2,2]]);
 tab3.import([[8,2,8],[2,8,8]]);

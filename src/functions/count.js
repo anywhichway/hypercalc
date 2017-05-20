@@ -1,5 +1,5 @@
 (function() {
-	flattenReduce = require("./flattenReduce.js");
+	const flattenReduce = require("./flattenReduce.js");
 	module.exports = function() {
 		let count = 1;
 		if(arguments.length===0) return 0;

@@ -1,3 +1,4 @@
 (function() {
-	module.exports = (value) => Math.pow(value,1/3);
+	const Unit = require("../Unit/index.js");
+	module.exports = value => Unit.pow(value,1/3);
 }).call(this);

@@ -1,38 +1,66 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function() {
-	// concatMap :: (a -> [b]) -> [a] -> [b]
-	module.exports = (f,reduce) => xs => (reduce ? xs.map(f).reduce((x,y) => x.concat(y), []).reduce((accu,curr) => reduce(accu,curr)): xs.map(f).reduce((x,y) => x.concat(y), []))
+	module.exports = (value,options,dflt) => {
+		if(options) {
+			const type = typeof(value);
+			if(options.replace) {
+				if(options.replace[type] && typeof(options.replace[type])==="object" && typeof(options.replace[type][value])!=="undefined") value = options.replace[type][value];
+				else if(typeof(options.replace[type])!=="undefined") value = options.replace[type];
+			} else if(typeof(options.NA)!=="undefined" && type==="undefined") value = options.NA;
+			else if(typeof(options.NaN)!=="undefined" && (type!=="number" || isNaN(value))) value = options.NaN;
+			
+			if(arguments.length===3 && options.if && !options.if(value)) value = dflt;
+		}
+		return value;
+	}
 }).call(this);
 },{}],2:[function(require,module,exports){
 (function() {
-	module.exports = function() { return (this ? new Date(...arguments) : Date(...arguments)) }
-	module.exports.now = () => Date.now();
-	module.exports.parse = (string) => Date.parse(string);
-	module.exports.UTC = () => Date.UTC(...arguments);
-	for(let key in Date.prototype) {
-		if(typeof(Date.prototype[key])==="function") {
-			module.exports[key] = function() { return Date.prototype[key].call(...arguments); }
-		}
-	}
+	// concatMap :: (a -> [b]) -> [a] -> [b]
+	module.exports = (f,reduce) => xs => (reduce ? xs.map(f).reduce((x,y) => x.concat(y), []).reduce((accu,curr) => reduce(accu,curr)): xs.map(f).reduce((x,y) => x.concat(y), []))
 }).call(this);
 },{}],3:[function(require,module,exports){
 (function() {
-	module.exports = (p1,p2) => Math.sqrt(p1.reduce((accumulator,current,i) => accumulator += Math.pow(p2[i]-p1[i],2),0));
+	const D = function() { return new Date(...arguments); };
+	D.now = Date.now;
+	D.parse = Date.parse;
+	D.UTC = Date.UTC;
+	module.exports = new Proxy(D,{
+		construct: (target,argumentsList) => new Date(...argumentsList),
+		get: (target,property) => {
+			if(["now","parse","UTC"].includes(property)) return target[property];
+			return new Proxy(function(){},{
+				apply: (target,thisArg,argumentsList) => {
+					let date = argumentsList[0];
+					if(typeof(date)==="string") date = new Date(date);
+					if(property==="dayOfMonth") property = "Date";
+					if(property.indexOf("to")!==0) property = "get" + property[0].toUpperCase() + property.substring(1);
+					return date[property](...argumentsList.slice(1));
+				}
+			});
+		}
+	});
 }).call(this);
 },{}],4:[function(require,module,exports){
+(function() {
+	module.exports = (p1,p2) => Math.sqrt(p1.reduce((accumulator,current,i) => accumulator += Math.pow(p2[i]-p1[i],2),0));
+}).call(this);
+},{}],5:[function(require,module,exports){
 (function() {
 	module.exports = {};
 	module.exports.distance = require("./distance.js");
 }).call(this);
-},{"./distance.js":3}],5:[function(require,module,exports){
+},{"./distance.js":4}],6:[function(require,module,exports){
 (function() {
-	module.exports = (value) => Math.pow(value,1/3);
+	const Unit = require("../Unit/index.js");
+	module.exports = value => Unit.pow(value,1/3);
 }).call(this);
-},{}],6:[function(require,module,exports){
+},{"../Unit/index.js":28}],7:[function(require,module,exports){
 (function() {
-	module.exports = value => value * value * value;
+	const Unit = require("../Unit/index.js");
+	module.exports = value => Unit.pow(value,3);
 }).call(this);
-},{}],7:[function(require,module,exports){
+},{"../Unit/index.js":28}],8:[function(require,module,exports){
 (function() {
 	module.exports =  v => {
 		let result = 1;
@@ -41,39 +69,36 @@
 		return result;
 	}
 }).call(this);
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function() {
 	module.exports = {};
-	const mathdesc = Object.getOwnPropertyDescriptors(Math);
-	for(let key in mathdesc) {
-		if(typeof(Math[key])==="function") module.exports[key] = function() { return Math[key](...arguments); }
-		else {
-			module.exports[key.toLowerCase()] = () => Math[key];
-			module.exports[key] = Math[key];
-		}
-	}
 	module.exports.cbrt = require("./cbrt.js");
 	module.exports.cube = require("./cube.js");
 	module.exports.factorial = require("./factorial.js");
 	module.exports.nthRoot = require("./nthRoot.js");
 	module.exports.phi = require("./phi.js");
-	module.exports.power = require("./power.js");
 	module.exports.sign = require("./sign.js");
 	module.exports.tau = require("./tau.js");
 	module.exports.random = require("./random.js");
 	module.exports.square = require("./square.js");
+	module.exports.min = require("../min.js");
+	module.exports.max = require("../max.js");
+	for(let key of Object.getOwnPropertyNames(Math)) {
+		const lowerkey = key.toLowerCase();
+		if(!module.exports[lowerkey]) {
+			if(typeof(Math[key])==="function") module.exports[lowerkey] = Math[key];
+			else module.exports[lowerkey] = () => Math[key];
+		}
+	}
 }).call(this);
-},{"./cbrt.js":5,"./cube.js":6,"./factorial.js":7,"./nthRoot.js":9,"./phi.js":10,"./power.js":11,"./random.js":12,"./sign.js":13,"./square.js":14,"./tau.js":15}],9:[function(require,module,exports){
+},{"../max.js":49,"../min.js":50,"./cbrt.js":6,"./cube.js":7,"./factorial.js":8,"./nthRoot.js":10,"./phi.js":11,"./random.js":12,"./sign.js":13,"./square.js":14,"./tau.js":15}],10:[function(require,module,exports){
 (function() {
-	module.exports = (value,root=2) => Math.pow(value,1/root);
+	const Unit = require("../Unit/index.js");
+	module.exports = (value,root=2) => Unit.pow(value,1/root);
 }).call(this);
-},{}],10:[function(require,module,exports){
+},{"../Unit/index.js":28}],11:[function(require,module,exports){
 (function() {
 	module.exports = () => (1 + Math.sqrt(5)) / 2;
-}).call(this);
-},{}],11:[function(require,module,exports){
-(function() {
-	module.exports = (x,y) => x ^ y;
 }).call(this);
 },{}],12:[function(require,module,exports){
 (function() {
@@ -88,13 +113,14 @@
 },{}],13:[function(require,module,exports){
 (function() {
 	const isNumber = require("../isNumber.js");
-	module.exports = value => (isNumber(value) ? (value > 0 ? 1 : (value ===0 ? 0 : -1)) : undefined);
+	module.exports = value => (isNumber(value) ? (value > 0 ? 1 : (value === 0 ? 0 : -1)) : undefined);
 }).call(this);
-},{"../isNumber.js":43}],14:[function(require,module,exports){
+},{"../isNumber.js":44}],14:[function(require,module,exports){
 (function() {
-	module.exports = value => value * value;
+	const Unit = require("../Unit/index.js");
+	module.exports = value => Unit.pow(value,2);
 }).call(this);
-},{}],15:[function(require,module,exports){
+},{"../Unit/index.js":28}],15:[function(require,module,exports){
 (function() {
 	module.exports = () => 2 * Math.PI;
 }).call(this);
@@ -210,11 +236,12 @@
 	}
 	module.exports = Matrix;
 }).call(this);
-},{"../Vector/index.js":31}],17:[function(require,module,exports){
+},{"../Vector/index.js":29}],17:[function(require,module,exports){
 (function() {
-	module.exports = () => 1.6021766208;
+	const Unit = require("../Unit/index.js");
+	module.exports = () => Unit.parse(1.6021766208*(Math.pow(10,-91)) + " coulombs");
 }).call(this);
-},{}],18:[function(require,module,exports){
+},{"../Unit/index.js":28}],18:[function(require,module,exports){
 (function() {
 	module.exports = {};
 	module.exports.c = require("./speedOfLight.js");
@@ -223,28 +250,30 @@
 }).call(this);
 },{"./elementaryCharge.js":17,"./planks.js":19,"./speedOfLight.js":20}],19:[function(require,module,exports){
 (function() {
-	module.exports = () => 6.626070040 * Math.pow(10,34);
+	const Unit = require("../Unit/index.js");
+	module.exports = () => Unit.parse((6.626070040 * Math.pow(10,34)) + " m^2 kg / s");
 }).call(this);
-},{}],20:[function(require,module,exports){
+},{"../Unit/index.js":28}],20:[function(require,module,exports){
 (function() {
-	module.exports = () => 299792458;
+	const Unit = require("../Unit/index.js");
+	module.exports = () => Unit.parse("299792458 m / s");
 }).call(this);
-},{}],21:[function(require,module,exports){
+},{"../Unit/index.js":28}],21:[function(require,module,exports){
 (function() {
 	module.exports = {};
 	module.exports.average = require("../average.js");
 	module.exports.count = require("../count.js");
 	module.exports.madev = require("./madev.js");
-	module.exports.max = require("./max.js");
+	module.exports.max = require("../max.js");
 	module.exports.median = require("./median.js");
-	module.exports.min = require("./min.js");
+	module.exports.min = require("../min.js");
 	module.exports.mode = require("./mode.js");
 	module.exports.product = require("../product.js");
 	module.exports.stdev = require("./stdev.js");
 	module.exports.sum = require("../sum.js");
 	module.exports.variance = require("./variance.js");
 }).call(this);
-},{"../average.js":33,"../count.js":34,"../product.js":49,"../sum.js":52,"./madev.js":22,"./max.js":23,"./median.js":24,"./min.js":25,"./mode.js":26,"./stdev.js":27,"./variance.js":28}],22:[function(require,module,exports){
+},{"../average.js":32,"../count.js":34,"../max.js":49,"../min.js":50,"../product.js":54,"../sum.js":59,"./madev.js":22,"./median.js":23,"./mode.js":24,"./stdev.js":25,"./variance.js":26}],22:[function(require,module,exports){
 (function() {
 	const average = require("../average"),
 		flatten = require("../flatten.js"),
@@ -255,16 +284,7 @@
 		return average(args.map(num => Math.abs(num - m)));
 	}
 }).call(this);
-},{"../average":33,"../flatten.js":38,"../sum.js":52}],23:[function(require,module,exports){
-(function() {
-	const Unit = require("../Unit/index.js"),
-		flattenReduce = require("../flattenReduce.js");
-	module.exports = function() {
-		if(arguments.length===0) return -Infinity;
-		return flattenReduce([].slice.call(arguments),Unit.max,true);
-	}
-}).call(this);
-},{"../Unit/index.js":30,"../flattenReduce.js":39}],24:[function(require,module,exports){
+},{"../average":32,"../flatten.js":39,"../sum.js":59}],23:[function(require,module,exports){
 (function() {
 	const getArgs = require("../../getArgs.js");
 	function median(args) {
@@ -282,16 +302,7 @@
 		return median(v);
 	}
 }).call(this);
-},{"../../getArgs.js":55}],25:[function(require,module,exports){
-(function() {
-	const Unit = require("../Unit/index.js"),
-		flattenReduce = require("../flattenReduce.js");
-	module.exports = function() {
-		if(arguments.length===0) return Infinity;
-		return flattenReduce([].slice.call(arguments),Unit.min,true);
-	}
-}).call(this);
-},{"../Unit/index.js":30,"../flattenReduce.js":39}],26:[function(require,module,exports){
+},{"../../getArgs.js":63}],24:[function(require,module,exports){
 (function() {
 	const getArgs = require("../../getArgs.js");
 	function mode(args) {
@@ -323,7 +334,7 @@
 		return mode(v);
 	}
 }).call(this);
-},{"../../getArgs.js":55}],27:[function(require,module,exports){
+},{"../../getArgs.js":63}],25:[function(require,module,exports){
 (function() {
 	const average = require("../average"),
 		flatten = require("../flatten.js"),
@@ -334,7 +345,7 @@
 		return !args.length ? 0 : Math.sqrt(variance(args));
 	}
 }).call(this);
-},{"../average":33,"../flatten.js":38,"./variance.js":28}],28:[function(require,module,exports){
+},{"../average":32,"../flatten.js":39,"./variance.js":26}],26:[function(require,module,exports){
 (function() {
 	const average = require("../average"),
 		flatten = require("../flatten.js"),
@@ -349,7 +360,7 @@
 		return args.reduce((accumulator, current) => accumulator += Math.pow((current - m), 2),0) / args.length;
 	}
 }).call(this);
-},{"../average":33,"../flatten.js":38,"../sum.js":52}],29:[function(require,module,exports){
+},{"../average":32,"../flatten.js":39,"../sum.js":59}],27:[function(require,module,exports){
 (function() {
 	module.exports = function() { return (this ? new String(...arguments) : String(...arguments)); }
 	const stringdesc = Object.getOwnPropertyDescriptors(String.prototype);
@@ -358,9 +369,24 @@
 			module.exports[key] = function() { return String.prototype[key].call(...arguments); }
 		}
 	}
+	module.exports.reverse = string => string.split("").reverse().join("");
 }).call(this);
-},{}],30:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 (function() {
+	"use strict"
+	const coerce = require("../../coerce.js");
+	function replaceForA() {
+		return {
+			boolean: {
+				true: 1,
+				false: 0
+			},
+			string: 0,
+			undefined: 0,
+			null: 0,
+			Array: 0
+		}
+	}
 	function adjustUnits(unit,base,divide) {
 		const mainparts = unit.baseUnits.split("/"),
 			modifier = (divide ? -1 : 1),
@@ -424,25 +450,25 @@
 		Object.defineProperty(scope,"constructor",{enumerable:false,configurable:true,writable:true,value:Unit});
 		return scope;
 	}
-	function Unit(value,unit) {
+	function Unit(value,unit,options) {
 		const type = typeof(value);
 		if((!this || !(this instanceof Unit)) && value && type==="object" && value instanceof Unit) {
 			return value;
 		} else if(type==="string") {
 			if((!this || !(this instanceof Unit))) {
-				return new Unit(value,unit);
+				return new Unit(value,unit,options);
 			}
-			const u = Unit.parse(value);
+			const u = Unit.parse(value,options);
 			for(let key in u) {
 				this[key] = u[key];
 			}
-		} else if(type==="number") {
-			if((!this || !(this instanceof Unit))) {
-				return new Unit(value,unit);
-			}
-			createUnit(value,this);
 		} else {
-			throw new TypeError(`Can't create Unit from ${JSON.stringify(value)}`);
+			if((!this || !(this instanceof Unit))) {
+				return new Unit(value,unit,options);
+			}
+			value = coerce(value,options);
+			if(typeof(value)==="number") createUnit(value,this);
+			else throw new TypeError(`Can't create Unit from ${JSON.stringify(value)}`);
 		}
 		if(unit) {
 			const base = Unit.getBase(unit);
@@ -454,47 +480,70 @@
 	}
 	Unit.conversions = {
 		cm: {
-			in: 2.54
+			in: 2.54,
+			m: 100
 		},
 		ms: {
-			sec: 1000
+			s: 1000
+		},
+		g: {
+			kg: 1000
 		}
 	}
-	Unit.add = function(a,b)  {
-		if(typeof(a)==="number" && typeof(b)==="number") return a + b;
+	Unit.add = function(a,b,options)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a + coerce(b,options,0);
 		a = createUnit(Unit(a)); // create a changeable Unit
-		b = Unit(b);
-		if(a.baseUnits===b.baseUnits || b.baseUnits==="") a.value += b.value
+		b = Unit(b,null,options);
+		if(a.baseUnits===b.baseUnits || b.baseUnits==="") a.value += coerce(b.value,options,0);
 		else throw new TypeError("Incompatible " + a + " + " + b);
 		return Object.freeze(a);
+	}
+	Unit.adda = function(a,b,options) {
+		options = Object.assign({replace:replaceForA()},(options || {}));
+		return Unit.add(a,b,options);
 	}
 	Unit.as = function(a,unit) {
 		if(typeof(a)==="string") a = Unit.parse(a);
 		const c = Unit.getConversion(a.baseUnits,unit);
 		if(typeof(c)==="number") return a.value * c;
 	}
-	Unit.divide = function(a,b)  {
-		if(typeof(a)==="number" && typeof(b)==="number") return a / b;
+	Unit.divide = function(a,b,options)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a / coerce(b,options,1);
 		a = createUnit(Unit(a)); // create a changeable Unit
-		b = Unit(b);
+		b = Unit(b,null,options);
 		if(a.baseUnits===b.baseUnits || Unit.isSimple(b)) {
-			a.value /= b.value;
+			a.value /= coerce(b.value,options,1);;
 			if(b.baseUnits && b.baseUnits.length>0) adjustUnits(a,b.baseUnits,true);
 		} else throw new TypeError("Incompatible " + a + " / " + b);
 		return Object.freeze(a);
 	}
+	Unit.dividea = function(a,b,options) {
+		options = Object.assign({replace:replaceForA()},(options || {}));
+		return Unit.divide(a,b,options);
+	}
+	Unit.equal = function(a,b)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a === b;
+		a = Unit(a);
+		b = Unit(b);
+		if(a.baseUnits===b.baseUnits || b.baseUnits==="") return a.value === b.value;
+		else throw new TypeError("Incompatible " + a + " + " + b);
+	}
 	Unit.isSimple = function(a) {
 		return a instanceof Unit && a.baseUnits.indexOf(" ")===-1;
 	}
-	Unit.multiply = function(a,b)  {
-		if(typeof(a)==="number" && typeof(b)==="number") return a * b;
+	Unit.multiply = function(a,b,options)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a * coerce(b,options,1);
 		a = createUnit(Unit(a)); // create a changeable Unit
-		b = Unit(b);
+		b = Unit(b,null,options);
 		if(a.baseUnits===b.baseUnits || Unit.isSimple(b)) {
-			a.value *= b.value;
+			a.value *= coerce(b.value,options,1);
 			if(b.baseUnits && b.baseUnits.length>0) adjustUnits(a,b.baseUnits);
 		} else throw new TypeError("Incompatible " + a + " * " + b);
 		return Object.freeze(a);
+	}
+	Unit.multiplya = function(a,b,options) {
+		options = Object.assign({replace:replaceForA()},(options || {}));
+		return Unit.multiply(a,b,options);
 	}
 	Unit.pow = function(a,b) {
 		if(typeof(a)==="number") return Math.pow(a,b);
@@ -503,14 +552,18 @@
 		adjustUnits(a,a.baseUnits);	
 		return Object.freeze(a);
 	}
-	Unit.subtract = function(a,b)  {
-		if(typeof(a)==="number" && typeof(b)==="number") return a - b;
+	Unit.subtract = function(a,b,options)  {
+		if(typeof(a)==="number" && typeof(b)==="number") return a - coerce(b,options,0);
 		a = createUnit(Unit(a)); // create a changeable Unit
-		b = Unit(b);
+		b = Unit(b,null,options);
 		a.constructor = Unit;
-		if(a.baseUnits===b.baseUnits || b.baseUnits==="") a.value -= b.value
+		if(a.baseUnits===b.baseUnits || b.baseUnits==="") a.value -= coerce(b.value,options,0);
 		else throw new TypeError("Incompatible " + a + " - " + b);
 		return Object.freeze(a);
+	}
+	Unit.subtracta = function(a,b,options) {
+		options = Object.assign({replace:replaceForA()},(options || {}));
+		return Unit.subtract(a,b,options);
 	}
 	Unit.to = function(a,unit) {
 		const parts = unit.split(" ");
@@ -538,18 +591,25 @@
 			const base = a.units[unit];
 			if(units.indexOf(base)>=0) { 
 				for(let part of parts) {
-					let multiplier = 1;
+					if(part==="/") continue;
+					let power = 1;
 					if(part.indexOf(base)===0) {
 						const subparts = part.split("^");
-						if(subparts[0]===base && subparts[1]) multiplier = parseFloat(subparts[1]);
+						if(subparts[0]===base && subparts[1]) power = parseFloat(subparts[1]);
 					}
-					value /= Math.pow(Unit.getConversion(base,unit),multiplier);
-					units = units.replace(new RegExp(base,"g"),unit);
+					value /= Math.pow(Unit.getConversion(base,unit),power);
+					units = units.replace(new RegExp(" "+base+"(\\^?\-?\\d*\\.?\\d?)* ","g")," " + unit + "$1 ")
+						.replace(new RegExp("^" + base + "(\\^?\-?\\d*\\.?\\d?\\s)"),unit+"$1")
+						.replace(new RegExp(base+"(\\^?\-?\\d*\\.?\\d?$)"),unit+"$1");
+					// can't seem to write a single RegExp that will match at start and end, they return null!
+					break;
 				}
 			}
 		}
 		return value + " " + units;
 	}
+
+	// is this necessary??
 	for(let key in Unit) {
 		if(typeof(Unit[key])==="function") Unit.prototype[key] = function() { return Unit[key](this,...arguments); }
 	}
@@ -579,27 +639,34 @@
 		if(a.value<b.value) return a;
 		return b;
 	}
-	Unit.parse = function(string) {
+	Unit.parse = function(string,options) {
 		const unit = createUnit(),
-			parts = string.split(" ");
-		unit.value = parseFloat(parts[0]);
+			parts = string.trim().split(" "),
+			value = parseFloat(parts[0]);
+		unit.value = coerce(value,options);
+		let dividing = false;
 		for(let i=1;i<parts.length;i++) {
 			const part = parts[i];
-			if(part!=="/") {
-				const subparts = part.split("^");
-				const base = Unit.getBase(subparts[0]);
+			if(part==="/") {
+				dividing = true;
+				unit.baseUnits += " /";
+			} else {
+				const subparts = part.split("^"),
+					base = Unit.getBase(subparts[0]);
+				let power = (subparts[1] ? parseFloat(subparts[1]) : 1);
 				if(part!==base) {
 					unit.units[subparts[0]] = base;
-					unit.value *= Unit.conversions[base][subparts[0]];
+					const conversion = Math.pow(Unit.conversions[base][subparts[0]],power);
+					unit.value = (dividing ? unit.value / conversion :  unit.value * conversion);
 				}
-				unit.baseUnits += (unit.baseUnits.length>0 ? " " : "") + base;
-			} else unit.baseUnits += " / ";
+				unit.baseUnits += (unit.baseUnits.length>0 ? " " : "") + base + (power!==0 && power!==1 ? "^" + power : "");
+			}
 		}
 		return Object.freeze(unit);
 	}
 	module.exports = Unit;
 }).call(this)
-},{}],31:[function(require,module,exports){
+},{"../../coerce.js":1}],29:[function(require,module,exports){
 (function() {
 	const add = require("../add.js"),
 		divide = require("../divide.js"),
@@ -724,25 +791,48 @@
 	module.exports = Vector;
 }).call(this);
 
-},{"../Unit/index.js":30,"../add.js":32,"../divide.js":36,"../multiply.js":47,"../pow.js":48,"../subtract.js":51}],32:[function(require,module,exports){
+},{"../Unit/index.js":28,"../add.js":30,"../divide.js":36,"../multiply.js":51,"../pow.js":53,"../subtract.js":57}],30:[function(require,module,exports){
 (function() {
 	const Unit = require("./Unit/index.js");
-	module.exports = (a,b) => Unit.add(a,b);
+	module.exports = (a,b,options) => Unit.add(a,b,options);
 }).call(this);
-},{"./Unit/index.js":30}],33:[function(require,module,exports){
+},{"./Unit/index.js":28}],31:[function(require,module,exports){
+(function() {
+	const Unit = require("./Unit/index.js");
+	module.exports = (a,b,options) => Unit.adda(a,b,options);
+}).call(this);
+},{"./Unit/index.js":28}],32:[function(require,module,exports){
 (function() {
 	const add = require("./add.js"),
+	isNumber = require("./isNumber.js"),
 	flattenReduce = require("./flattenReduce.js"),
 	divide = require("./divide.js");
 	module.exports = function() {
 		let count = 1;
 		if(arguments.length===0) return NaN;
-		return divide(flattenReduce([].slice.call(arguments),(a,b) => { count++; return add(a,b); },true),count);
+		return divide(flattenReduce([].slice.call(arguments),(a,b,options) => {
+			if(isNumber(b)) {
+				count++; 
+				return add(a,b,options); // this needs more work on options.if etc
+			}
+			return a;
+		},true),count);
 	}
 }).call(this);
-},{"./add.js":32,"./divide.js":36,"./flattenReduce.js":39}],34:[function(require,module,exports){
+},{"./add.js":30,"./divide.js":36,"./flattenReduce.js":40,"./isNumber.js":44}],33:[function(require,module,exports){
 (function() {
-	flattenReduce = require("./flattenReduce.js");
+	const adda = require("./adda.js"),
+	flattenReduce = require("./flattenReduce.js"),
+	divide = require("./divide.js");
+	module.exports = function() {
+		let count = 1;
+		if(arguments.length===0) return NaN;
+		return divide(flattenReduce([].slice.call(arguments),(a,b,options) => { count++; return adda(a,b,options); },true),count);
+	}
+}).call(this);
+},{"./adda.js":31,"./divide.js":36,"./flattenReduce.js":40}],34:[function(require,module,exports){
+(function() {
+	const flattenReduce = require("./flattenReduce.js");
 	module.exports = function() {
 		let count = 1;
 		if(arguments.length===0) return 0;
@@ -750,7 +840,7 @@
 		return count;
 	}
 }).call(this);
-},{"./flattenReduce.js":39}],35:[function(require,module,exports){
+},{"./flattenReduce.js":40}],35:[function(require,module,exports){
 (function() {
 	function array_equals(a, b)
 	{
@@ -778,17 +868,21 @@
 },{}],36:[function(require,module,exports){
 (function() {
 	const Unit = require("./Unit/index.js");
-	module.exports = (a,b) => Unit.divide(a,b);
+	module.exports = (a,b,options) => Unit.divide(a,b,options);
 }).call(this);
-},{"./Unit/index.js":30}],37:[function(require,module,exports){
+},{"./Unit/index.js":28}],37:[function(require,module,exports){
 (function() {
-	// change to a variable arg function
-	// change to support vector and matrices
-	const equal = (a,b) => a===b || (Array.isArray(a) && Array.isArray(b) && arrayEqual(a,b)),
-		arrayEqual = (a,b) => a.length===b.length && a.every((item,i) => equal(item,b[i]));
+	const Unit = require("./Unit/index.js");
+	module.exports = (a,b,options) => Unit.dividea(a,b,options);
+}).call(this);
+},{"./Unit/index.js":28}],38:[function(require,module,exports){
+(function() {
+	const Unit = require("./Unit/index.js"),
+		arrayEqual = (a,b) => a.length===b.length && a.every((item,i) => equal(item,b[i])),
+		equal = (a,b) => a===b || (Array.isArray(a) ? Array.isArray(b) && arrayEqual(a,b) : Unit.equal(a,b));
 	module.exports = equal;
 }).call(this);
-},{}],38:[function(require,module,exports){
+},{"./Unit/index.js":28}],39:[function(require,module,exports){
 (function() {
 	const concatMapReduce = require("../concatMapReduce.js");
 	// id :: a -> a
@@ -801,7 +895,7 @@
 	
 	module.exports = (array,deep) => (deep ? deepFlatten : flatten)(array);
 }).call(this);
-},{"../concatMapReduce.js":1}],39:[function(require,module,exports){
+},{"../concatMapReduce.js":2}],40:[function(require,module,exports){
 (function() {
 	const concatMapReduce = require("../concatMapReduce.js");
 	// flatten :: [[a]] -> [a]
@@ -812,27 +906,27 @@
 	
 	module.exports = (array,reduce,deep) => (deep ? deepFlattenReduce : shallowFlattenReduce)(array,reduce);
 }).call(this);
-},{"../concatMapReduce.js":1}],40:[function(require,module,exports){
+},{"../concatMapReduce.js":2}],41:[function(require,module,exports){
 (function() {
 	module.exports = data => typeof(data)==="function";
 }).call(this);
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 (function() {
 	module.exports = data => Array.isArray(data) && Array.isArray(data[0]) && Array.isArray(data[data.length-1]);
 }).call(this);
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 (function() {
 	module.exports = value => value < 0;
 }).call(this);
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 (function() {
 	module.exports = data => typeof(data)==="number";
 }).call(this);
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 (function() {
 	module.exports = value => value > 0;
 }).call(this);
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 (function() {
 	module.exports = num => {
 	    for(let i = 2, s = Math.sqrt(num); i <= s; i++)
@@ -840,30 +934,84 @@
 	    return num !== 1;
 	}
 }).call(this);
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 (function() {
 	module.exports = data => Array.isArray(data) && !Array.isArray(data[0]) && !Array.isArray(data[data.length-1]);
 }).call(this);
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		traverse = require("../traverse.js");
+	module.exports = function join() {
+		const [v,options] = getArgs([].slice.call(arguments,0)),
+			separator = v[v.length-1];
+		let result = "";
+		traverse(v.slice(0,v.length-1),item => result += (Array.isArray(item) ? join(...item,separator,options) : (result.length>0 ? separator : "") + item));
+		return result;
+	}
+}).call(this);
+},{"../getArgs.js":63,"../traverse.js":65}],49:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		add = require("./add.js"),
+		flattenReduce = require("./flattenReduce.js"),
+		Unit = require("./Unit/index.js");
+	module.exports = function() {
+		const [v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===0) return -Infinity;
+		return add(flattenReduce([].slice.call(v),(a,b) => Unit.max(a,b,options),true),0);
+	}
+}).call(this);
+},{"../getArgs.js":63,"./Unit/index.js":28,"./add.js":30,"./flattenReduce.js":40}],50:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		add = require("./add.js"),
+		flattenReduce = require("./flattenReduce.js"),
+		Unit = require("./Unit/index.js");
+	module.exports = function() {
+		const [v,options] = getArgs([].slice.call(arguments,0));
+		if(v.length===0) return Infinity;
+		return add(flattenReduce([].slice.call(v),(a,b) => Unit.min(a,b,options),true),0);
+	}
+}).call(this);
+},{"../getArgs.js":63,"./Unit/index.js":28,"./add.js":30,"./flattenReduce.js":40}],51:[function(require,module,exports){
 (function() {
 	const Unit = require("./Unit/index.js");
 	module.exports = (a,b) => Unit.multiply(a,b);
 }).call(this);
-},{"./Unit/index.js":30}],48:[function(require,module,exports){
+},{"./Unit/index.js":28}],52:[function(require,module,exports){
+(function() {
+	const Unit = require("./Unit/index.js");
+	module.exports = (a,b,options) => Unit.multiplya(a,b,options);
+}).call(this);
+},{"./Unit/index.js":28}],53:[function(require,module,exports){
 (function() {
 	const Unit = require("./Unit/index.js");
 	module.exports = (a,b) => Unit.pow(a,b);
 }).call(this);
-},{"./Unit/index.js":30}],49:[function(require,module,exports){
+},{"./Unit/index.js":28}],54:[function(require,module,exports){
 (function() {
-	const add = require("./add.js"),
+	const getArgs = require("../getArgs.js"),
+		add = require("./add.js"),
 		flattenReduce = require("./flattenReduce.js"),
 		multiply = require("./multiply.js");
 	module.exports = function() {
-		return add(flattenReduce([].slice.call(arguments),multiply,true),0);
+		const [v,options] = getArgs([].slice.call(arguments,0));
+		return add(flattenReduce([].slice.call(v),(a,b) => multiply(a,b,options),true),0);
 	}
 }).call(this);
-},{"./add.js":32,"./flattenReduce.js":39,"./multiply.js":47}],50:[function(require,module,exports){
+},{"../getArgs.js":63,"./add.js":30,"./flattenReduce.js":40,"./multiply.js":51}],55:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		add = require("./add.js"),
+		flattenReduce = require("./flattenReduce.js"),
+		multiplya = require("./multiplya.js");
+	module.exports = function() {
+		const [v,options] = getArgs([].slice.call(arguments,0));
+		return add(flattenReduce([].slice.call(v),(a,b) => multiplya(a,b,options),true),0);
+	}
+}).call(this);
+},{"../getArgs.js":63,"./add.js":30,"./flattenReduce.js":40,"./multiplya.js":52}],56:[function(require,module,exports){
 (function() {
 	const add = require("./add.js"),
 		divide = require("./divide.js"),
@@ -872,33 +1020,51 @@
 		return add(flattenReduce([].slice.call(arguments),divide,true),0);
 	}
 }).call(this);
-},{"./add.js":32,"./divide.js":36,"./flattenReduce.js":39}],51:[function(require,module,exports){
+},{"./add.js":30,"./divide.js":36,"./flattenReduce.js":40}],57:[function(require,module,exports){
 (function() {
 	const Unit = require("./Unit/index.js");
-	module.exports = (a,b) => Unit.subtract(a,b);
+	module.exports = (a,b,options) => Unit.subtract(a,b,options);
 }).call(this);
-},{"./Unit/index.js":30}],52:[function(require,module,exports){
+},{"./Unit/index.js":28}],58:[function(require,module,exports){
 (function() {
-	const add = require("./add.js"),
+	const Unit = require("./Unit/index.js");
+	module.exports = (a,b,options) => Unit.subtracta(a,b,options);
+}).call(this);
+},{"./Unit/index.js":28}],59:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		add = require("./add.js"),
 		flattenReduce = require("./flattenReduce.js");
 	module.exports = function() {
-		return add(flattenReduce([].slice.call(arguments),add,true),0);
+		const [v,options] = getArgs([].slice.call(arguments,0));
+		return add(flattenReduce([].slice.call(v),(a,b) => add(a,b,options),true),0);
 	}
 }).call(this);
-},{"./add.js":32,"./flattenReduce.js":39}],53:[function(require,module,exports){
+},{"../getArgs.js":63,"./add.js":30,"./flattenReduce.js":40}],60:[function(require,module,exports){
+(function() {
+	const getArgs = require("../getArgs.js"),
+		add = require("./add.js"),
+		adda = require("./adda.js"),
+		flattenReduce = require("./flattenReduce.js");
+	module.exports = function() {
+		const [v,options] = getArgs([].slice.call(arguments,0));
+		return add(flattenReduce([].slice.call(v),(a,b) => adda(a,b,options),true),0);
+	}
+}).call(this);
+},{"../getArgs.js":63,"./add.js":30,"./adda.js":31,"./flattenReduce.js":40}],61:[function(require,module,exports){
 (function() {
 	module.exports = (value,options={}) => { 
 		return new Function("value","return `"+(options.template ? options.template : "${value}")+"`")(value); 
 	}
 }).call(this);
-},{}],54:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 (function() {
 	module.exports = function(v) {
 		const type = typeof(v);
 		return (v===null || v===undefined ? "undefined" : (Array.isArray(v) ? "Array" : (type==="object" ? v.constructor.name : type)));
 	}
 }).call(this);
-},{}],55:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 (function() {
 	function getArgs(args) {
 		getArgs.VARGS = [];
@@ -921,7 +1087,7 @@
 	}
 	module.exports = getArgs;
 }).call(this);
-},{}],56:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 /*  AGPLv3.0 License
 * 
 * Hypercalc
@@ -951,16 +1117,6 @@
 (function() {
 	"use strict"
 	
-	const gridDivide = (a,b) => a.map((x,i) => a[i] / (Array.isArray(b) ? b[i] : b));
-
-	const gridMultiply = (a,b) => a.map((x,i) => a[i] * (Array.isArray(b) ? b[i] : b));
-	
-	
-	
-	const mAdd = (a,b) => a.map((x,i) => a[i] + (Array.isArray(b) ? b[i] || 0 : b));
-
-	const mSubtract = (a,b) => a.map((x,i) => a[i] - (Array.isArray(b) ? b[i] || 0 : b));
-	
 	function zscores(args) {
 		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
 		const m = mean(args),
@@ -968,13 +1124,7 @@
 		return args.map(num => (num - m) / sd);
 	}
 	
-	const traverse = (matrix,callback) => {
-		for(let i=0;i<matrix.length;i++) {
-			const item = matrix[i];
-			if(Array.isArray(item)) traverse(item,callback);
-			else callback(item,i,matrix);
-		}
-	}
+	const traverse = require("./traverse.js");
 	
 	function replaceForA() {
 		return {
@@ -1024,8 +1174,8 @@
 		return [result,options];
 	}
 	
-	function match(pattern,coordinate2) {
-		const c1 = pattern.split("."), c2 = coordinate2.split(".");
+	function match(pattern,coordinate) {
+		const c1 = pattern.split("."), c2 = coordinate.split(".");
 		return c1.length===c2.length && c1.every((key,i) => { 
 			const parts = key.split(":");
 			if(parts.length===1) return parts[0]==="*" || parts[0]===c2[i];
@@ -1044,27 +1194,45 @@
 		me.calculating = 0;
 		Object.defineProperty(me,"oncalculated",{enumerable:false,configurable:true,writable:true,value:options.oncalculated});
 		
+		let O;
 		FUNCTIONS.Date = require("./functions/Date/index.js");
+		FUNCTIONS.now = FUNCTIONS.Date.now;
+		FUNCTIONS.UTC = FUNCTIONS.Date.UTC;
+		for(let key of Object.getOwnPropertyNames(Date.prototype)) {
+			if(key.indexOf("get")===0 || key.indexOf("to")===0) {
+				if(key.indexOf("get")===0) key = key.substring(3);
+				if(key==="Date") key = "dayOfMonth";
+				if(key[0]!=="U") key = key[0].toLowerCase() + key.substring(1);
+				FUNCTIONS[key] = function() { return FUNCTIONS.Date[key](...arguments); }
+			}
+		}
 		
 		FUNCTIONS.Geometry = require("./functions/Geometry/index.js");
 		
 		FUNCTIONS.Math = require("./functions/Math/index.js");
+		for(let key in FUNCTIONS.Math) FUNCTIONS[key] = FUNCTIONS.Math[key];
 		
 		FUNCTIONS.Matrix = require("./functions/Matrix/index.js");
 		FUNCTIONS.Physics = require("./functions/Physics/index.js");
-		FUNCTIONS.Statistics = require("./functions/Statistics/index.js");
+		FUNCTIONS.Statistics = require("./functions/Statistics/index.js"); // elevate to top level
+		for(let key in FUNCTIONS.Statistics) FUNCTIONS[key] = FUNCTIONS.Statistics[key];
 			
-		FUNCTIONS.String = require("./functions/String/index.js");
+		FUNCTIONS.String = require("./functions/String/index.js"); // elevate to top level
+		for(let key in FUNCTIONS.String) FUNCTIONS[key] = FUNCTIONS.String[key];
 		
 		FUNCTIONS.Unit = require("./functions/Unit/index.js");
 		FUNCTIONS.Vector = require("./functions/Vector/index.js");
 	
 		FUNCTIONS.add = require("./functions/add.js");
+		FUNCTIONS.adda = require("./functions/adda.js");
 		FUNCTIONS.average = require("./functions/average.js");
+		FUNCTIONS.averagea = require("./functions/averagea.js");
+		FUNCTIONS.count = require("./functions/count.js");
 		FUNCTIONS.dimensions = require("./functions/dimensions.js");
 		FUNCTIONS.divide = require("./functions/divide.js");
+		FUNCTIONS.dividea = require("./functions/dividea.js");
 		FUNCTIONS.equal = require("./functions/equal.js");
-		
+		FUNCTIONS.flatten = require("./functions/flatten.js");
 		FUNCTIONS.isFunction = require("./functions/isFunction.js");
 		FUNCTIONS.isMatrix = require("./functions/isMatrix.js");
 		FUNCTIONS.isNegative = require("./functions/isNegative.js");
@@ -1072,29 +1240,33 @@
 		FUNCTIONS.isPositive = require("./functions/isPositive.js");
 		FUNCTIONS.isPrime = require("./functions/isPrime.js");
 		FUNCTIONS.isVector = require("./functions/isVector.js");
-		
+		FUNCTIONS.join = require("./functions/join.js");
 		FUNCTIONS.multiply = require("./functions/multiply.js");
+		FUNCTIONS.multiplya = require("./functions/multiplya.js");
 		FUNCTIONS.product = require("./functions/product.js");
+		FUNCTIONS.producta = require("./functions/producta.js");
 		FUNCTIONS.power = FUNCTIONS.pow = require("./functions/pow.js");
 		FUNCTIONS.quotient = require("./functions/quotient.js");
 		FUNCTIONS.subtract = require("./functions/subtract.js");
+		FUNCTIONS.subtracta = require("./functions/subtracta.js");
 		FUNCTIONS.sum = require("./functions/sum.js");
+		FUNCTIONS.suma = require("./functions/suma.js");
 		FUNCTIONS.text = require("./functions/text.js");
 		FUNCTIONS.type = require("./functions/type.js");
 		
-		FUNCTIONS.$ = function(coordinates,options) {
+		FUNCTIONS.range = function(coordinates,options) {
 			const values = [],
 				cells = FUNCTIONS.cells(coordinates);
 			for(let cell of cells) (options && options.if ? !options.if(cell.value) || values.push(cell.value) : values.push(cell.value));
 			return values;
 		}
-		FUNCTIONS.$summary = function(coordinates,options={result:"array",values:["min","average","max"]}) {
+		FUNCTIONS.summary = function(coordinates,options={result:"array",values:["min","average","max"]}) {
 			const results = (options.result==="array" ? [] : {}),
 				values = [],
 			cells = FUNCTIONS.cells(coordinates);
 			for(let cell of cells) (options && options.if ? !options.if(cell.value) || values.push(cell.value) : values.push(cell.value));
 			for(let option of options.values) {
-				const value = FUNCTIONS[option](values);
+				const value = FUNCTIONS.Statistics[option](values);
 				if(options.result==="array") results.push(value)
 				else results[option] = value;
 			}
@@ -1109,7 +1281,7 @@
 			VARGS.push(arg);
 			return VARGS;
 		}
-		FUNCTIONS.values = FUNCTIONS.$a = function(coordinates,options) {
+		FUNCTIONS.values = function(coordinates,options) {
 			const values = [],
 				cells = FUNCTIONS.cells(coordinates);
 			options = Object.assign({replace:replaceForA()},(options || {}));
@@ -1127,15 +1299,6 @@
 				observers[CURRENTCELL.coordinates] = true;
 			}
 			return Cell.find(pattern,Cell.cellIndex);
-		}
-		FUNCTIONS.averagea = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return 0;
-			options = Object.assign({replace:replaceForA()},(options || {}));
-			return v.reduce((accumulator,current) => accumulator + coerce(current,options),0) / v.length;
 		}
 		FUNCTIONS.counta = function() {
 			let v, options;
@@ -1207,24 +1370,6 @@
 			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
 			return v.reduce((accumulator,current) => Math.min(accumulator,current));
 		}
-		FUNCTIONS.producta = function()  {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return 0;
-			options = Object.assign({
-				boolean: {
-					true: 1,
-					false: 0
-				},
-				string: 1,
-				undefined: 1,
-				null: 1,
-				Array: 1
-			},(options || {}));
-			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:options}));
-			return FUNCTIONS.product(...v);
-		}
 		FUNCTIONS.quotienta = function()  {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
@@ -1250,13 +1395,6 @@
 			options = Object.assign({replace:replaceForA()},(options || {}));
 			if(options && options.if) v = v.filter(options.if);
 			return v.reduce((accumulator,current) => accumulator - coerce(current,options),0);
-		}
-		FUNCTIONS.suma = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			options = Object.assign({replace:replaceForA()},(options || {}));
-			if(options && options.if) v = v.filter(options.if);
-			return v.reduce((accumulator,current) => accumulator + coerce(current,options),0);
 		}
 		
 		FUNCTIONS.zscores = function() {
@@ -1286,6 +1424,7 @@
 				if(!cell) return new Cell(coordinates,value,options);
 				if(arguments.length===1) return cell;
 				cell.value = value;
+				cell.options || (cell.options={});
 				!options || Object.assign(cell.options,options);
 				return cell;
 			}
@@ -1326,8 +1465,12 @@
 			delete this.compiled;
 			this.index();
 			if(typeof(this.data)==="string" && this.data.indexOf("=")===0) {
+				let formula = this.data.substring(1);
+				formula = formula.replace(/\$\((.*?)\)/g,"range('$1')");
+				formula = formula.replace(/\$summary\((.*?)\)/g,"summary('$1')");
+				formula = formula.replace(/\$a\((.*?)\)/g,"values('$1')");
 				//Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { " + DECLARATIONS + "return " + this.data.substring(1) + "; }")(FUNCTIONS)});
-				Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { with(functions) { return " + this.data.substring(1) + "; }}")(FUNCTIONS)});
+				Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { with(functions) { return " + formula + "; }}")(FUNCTIONS)});
 			}
 			for(let pattern in Cell.observers) {
 				const observers = [];
@@ -1522,7 +1665,7 @@
 			}
 		}
 		me.spaces = {};
-		me.Sheet = class Sheet extends this.Space {
+		me.Sheet = class Sheet extends me.Space {
 			constructor(name,options={sparse:me.options.sparse}) {
 				super(name,options);
 				let sheet = me.sheets[name];
@@ -1578,4 +1721,14 @@
 	if(typeof(window)!=="undefined") window.Hypercalc = Hypercalc;
 	
 }).call(this);
-},{"./functions/Date/index.js":2,"./functions/Geometry/index.js":4,"./functions/Math/index.js":8,"./functions/Matrix/index.js":16,"./functions/Physics/index.js":18,"./functions/Statistics/index.js":21,"./functions/String/index.js":29,"./functions/Unit/index.js":30,"./functions/Vector/index.js":31,"./functions/add.js":32,"./functions/average.js":33,"./functions/dimensions.js":35,"./functions/divide.js":36,"./functions/equal.js":37,"./functions/isFunction.js":40,"./functions/isMatrix.js":41,"./functions/isNegative.js":42,"./functions/isNumber.js":43,"./functions/isPositive.js":44,"./functions/isPrime.js":45,"./functions/isVector.js":46,"./functions/multiply.js":47,"./functions/pow.js":48,"./functions/product.js":49,"./functions/quotient.js":50,"./functions/subtract.js":51,"./functions/sum.js":52,"./functions/text.js":53,"./functions/type.js":54}]},{},[56]);
+},{"./functions/Date/index.js":3,"./functions/Geometry/index.js":5,"./functions/Math/index.js":9,"./functions/Matrix/index.js":16,"./functions/Physics/index.js":18,"./functions/Statistics/index.js":21,"./functions/String/index.js":27,"./functions/Unit/index.js":28,"./functions/Vector/index.js":29,"./functions/add.js":30,"./functions/adda.js":31,"./functions/average.js":32,"./functions/averagea.js":33,"./functions/count.js":34,"./functions/dimensions.js":35,"./functions/divide.js":36,"./functions/dividea.js":37,"./functions/equal.js":38,"./functions/flatten.js":39,"./functions/isFunction.js":41,"./functions/isMatrix.js":42,"./functions/isNegative.js":43,"./functions/isNumber.js":44,"./functions/isPositive.js":45,"./functions/isPrime.js":46,"./functions/isVector.js":47,"./functions/join.js":48,"./functions/multiply.js":51,"./functions/multiplya.js":52,"./functions/pow.js":53,"./functions/product.js":54,"./functions/producta.js":55,"./functions/quotient.js":56,"./functions/subtract.js":57,"./functions/subtracta.js":58,"./functions/sum.js":59,"./functions/suma.js":60,"./functions/text.js":61,"./functions/type.js":62,"./traverse.js":65}],65:[function(require,module,exports){
+(function() {
+	module.exports = traverse = (array,callback) => {
+		for(let i=0;i<array.length;i++) {
+			const item = array[i];
+			if(Array.isArray(item)) traverse(item,callback);
+			else callback(item,i,array);
+		}
+	}
+}).call(this);
+},{}]},{},[64]);

@@ -1,6 +1,6 @@
 <html>
 <head>
-<script src="../../browser/hypercalc.es5.js"></script>
+<script src="../../browser/hypercalc.js"></script>
 </head>
 <body>
 <table id="ui" border="1" style="border-spacing: 0px;">
@@ -12,22 +12,13 @@ const hc = new Hypercalc(),
 	tab1 = new hc.Sheet("Tab1"),
 	table = document.getElementById("ui"),
 	editor = document.getElementById("editor"),
-	update = (item,value) => {
-		item.value === value || (item.value===value);
-		if(item instanceof hc.Cell) {
-			editor.cell = item;
-			editor.value = item.data;
-		}
-	};
-editor.onchange = function(e) {
-	e.target.focused.cell.data === e.target.value || (e.target.focused.cell.value = e.target.value);
-}
-
-const inputs = [];
-for(let r=1;r<=4;r++) {
+	size = 4,
+	inputs = [];
+	
+for(let r=1;r<=size;r++) {
 	const row = [];
 	inputs.push(row);
-	for(let c=1;c<=4;c++) {
+	for(let c=1;c<=size;c++) {
 		// create the input cells first so focus can be set based on key strokes
 		const input = document.createElement("input");
 		input.row = r-1;
@@ -54,6 +45,11 @@ for(let r=1;r<=4;r++) {
 		}
 	}
 }
+	
+editor.onchange = function(e) {
+	e.target.focused.cell.data === e.target.value || (e.target.focused.cell.value = e.target.value);
+}
+
 editor.onkeydown = function(e) {
 	if(e.keyCode===9) {
 		const row = inputs[e.target.focused.row];
@@ -74,10 +70,10 @@ editor.onkeyup = function(e) {
 		}
 	}
 }
-for(let r=0;r<=4;r++) {
+for(let r=0;r<=size;r++) {
 	const row = document.createElement("tr");
 	table.appendChild(row);
-	for(let c=0;c<=4;c++) {
+	for(let c=0;c<=size;c++) {
 		const td = document.createElement("td");
 		td.style.padding = "0px";
 		if(c===0) td.style.width = "5px"

@@ -27,16 +27,6 @@
 (function() {
 	"use strict"
 	
-	const gridDivide = (a,b) => a.map((x,i) => a[i] / (Array.isArray(b) ? b[i] : b));
-
-	const gridMultiply = (a,b) => a.map((x,i) => a[i] * (Array.isArray(b) ? b[i] : b));
-	
-	
-	
-	const mAdd = (a,b) => a.map((x,i) => a[i] + (Array.isArray(b) ? b[i] || 0 : b));
-
-	const mSubtract = (a,b) => a.map((x,i) => a[i] - (Array.isArray(b) ? b[i] || 0 : b));
-	
 	function zscores(args) {
 		args = (Array.isArray(args) ? args.slice(0) : [].slice.call(arguments,0));
 		const m = mean(args),
@@ -44,13 +34,7 @@
 		return args.map(num => (num - m) / sd);
 	}
 	
-	const traverse = (matrix,callback) => {
-		for(let i=0;i<matrix.length;i++) {
-			const item = matrix[i];
-			if(Array.isArray(item)) traverse(item,callback);
-			else callback(item,i,matrix);
-		}
-	}
+	const traverse = require("./traverse.js");
 	
 	function replaceForA() {
 		return {
@@ -100,8 +84,8 @@
 		return [result,options];
 	}
 	
-	function match(pattern,coordinate2) {
-		const c1 = pattern.split("."), c2 = coordinate2.split(".");
+	function match(pattern,coordinate) {
+		const c1 = pattern.split("."), c2 = coordinate.split(".");
 		return c1.length===c2.length && c1.every((key,i) => { 
 			const parts = key.split(":");
 			if(parts.length===1) return parts[0]==="*" || parts[0]===c2[i];
@@ -120,27 +104,45 @@
 		me.calculating = 0;
 		Object.defineProperty(me,"oncalculated",{enumerable:false,configurable:true,writable:true,value:options.oncalculated});
 		
+		let O;
 		FUNCTIONS.Date = require("./functions/Date/index.js");
+		FUNCTIONS.now = FUNCTIONS.Date.now;
+		FUNCTIONS.UTC = FUNCTIONS.Date.UTC;
+		for(let key of Object.getOwnPropertyNames(Date.prototype)) {
+			if(key.indexOf("get")===0 || key.indexOf("to")===0) {
+				if(key.indexOf("get")===0) key = key.substring(3);
+				if(key==="Date") key = "dayOfMonth";
+				if(key[0]!=="U") key = key[0].toLowerCase() + key.substring(1);
+				FUNCTIONS[key] = function() { return FUNCTIONS.Date[key](...arguments); }
+			}
+		}
 		
 		FUNCTIONS.Geometry = require("./functions/Geometry/index.js");
 		
 		FUNCTIONS.Math = require("./functions/Math/index.js");
+		for(let key in FUNCTIONS.Math) FUNCTIONS[key] = FUNCTIONS.Math[key];
 		
 		FUNCTIONS.Matrix = require("./functions/Matrix/index.js");
 		FUNCTIONS.Physics = require("./functions/Physics/index.js");
-		FUNCTIONS.Statistics = require("./functions/Statistics/index.js");
+		FUNCTIONS.Statistics = require("./functions/Statistics/index.js"); // elevate to top level
+		for(let key in FUNCTIONS.Statistics) FUNCTIONS[key] = FUNCTIONS.Statistics[key];
 			
-		FUNCTIONS.String = require("./functions/String/index.js");
+		FUNCTIONS.String = require("./functions/String/index.js"); // elevate to top level
+		for(let key in FUNCTIONS.String) FUNCTIONS[key] = FUNCTIONS.String[key];
 		
 		FUNCTIONS.Unit = require("./functions/Unit/index.js");
 		FUNCTIONS.Vector = require("./functions/Vector/index.js");
 	
 		FUNCTIONS.add = require("./functions/add.js");
+		FUNCTIONS.adda = require("./functions/adda.js");
 		FUNCTIONS.average = require("./functions/average.js");
+		FUNCTIONS.averagea = require("./functions/averagea.js");
+		FUNCTIONS.count = require("./functions/count.js");
 		FUNCTIONS.dimensions = require("./functions/dimensions.js");
 		FUNCTIONS.divide = require("./functions/divide.js");
+		FUNCTIONS.dividea = require("./functions/dividea.js");
 		FUNCTIONS.equal = require("./functions/equal.js");
-		
+		FUNCTIONS.flatten = require("./functions/flatten.js");
 		FUNCTIONS.isFunction = require("./functions/isFunction.js");
 		FUNCTIONS.isMatrix = require("./functions/isMatrix.js");
 		FUNCTIONS.isNegative = require("./functions/isNegative.js");
@@ -148,29 +150,33 @@
 		FUNCTIONS.isPositive = require("./functions/isPositive.js");
 		FUNCTIONS.isPrime = require("./functions/isPrime.js");
 		FUNCTIONS.isVector = require("./functions/isVector.js");
-		
+		FUNCTIONS.join = require("./functions/join.js");
 		FUNCTIONS.multiply = require("./functions/multiply.js");
+		FUNCTIONS.multiplya = require("./functions/multiplya.js");
 		FUNCTIONS.product = require("./functions/product.js");
+		FUNCTIONS.producta = require("./functions/producta.js");
 		FUNCTIONS.power = FUNCTIONS.pow = require("./functions/pow.js");
 		FUNCTIONS.quotient = require("./functions/quotient.js");
 		FUNCTIONS.subtract = require("./functions/subtract.js");
+		FUNCTIONS.subtracta = require("./functions/subtracta.js");
 		FUNCTIONS.sum = require("./functions/sum.js");
+		FUNCTIONS.suma = require("./functions/suma.js");
 		FUNCTIONS.text = require("./functions/text.js");
 		FUNCTIONS.type = require("./functions/type.js");
 		
-		FUNCTIONS.$ = function(coordinates,options) {
+		FUNCTIONS.range = function(coordinates,options) {
 			const values = [],
 				cells = FUNCTIONS.cells(coordinates);
 			for(let cell of cells) (options && options.if ? !options.if(cell.value) || values.push(cell.value) : values.push(cell.value));
 			return values;
 		}
-		FUNCTIONS.$summary = function(coordinates,options={result:"array",values:["min","average","max"]}) {
+		FUNCTIONS.summary = function(coordinates,options={result:"array",values:["min","average","max"]}) {
 			const results = (options.result==="array" ? [] : {}),
 				values = [],
 			cells = FUNCTIONS.cells(coordinates);
 			for(let cell of cells) (options && options.if ? !options.if(cell.value) || values.push(cell.value) : values.push(cell.value));
 			for(let option of options.values) {
-				const value = FUNCTIONS[option](values);
+				const value = FUNCTIONS.Statistics[option](values);
 				if(options.result==="array") results.push(value)
 				else results[option] = value;
 			}
@@ -185,7 +191,7 @@
 			VARGS.push(arg);
 			return VARGS;
 		}
-		FUNCTIONS.values = FUNCTIONS.$a = function(coordinates,options) {
+		FUNCTIONS.values = function(coordinates,options) {
 			const values = [],
 				cells = FUNCTIONS.cells(coordinates);
 			options = Object.assign({replace:replaceForA()},(options || {}));
@@ -203,15 +209,6 @@
 				observers[CURRENTCELL.coordinates] = true;
 			}
 			return Cell.find(pattern,Cell.cellIndex);
-		}
-		FUNCTIONS.averagea = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(Array.isArray(v[0])) v = v[0];
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return 0;
-			options = Object.assign({replace:replaceForA()},(options || {}));
-			return v.reduce((accumulator,current) => accumulator + coerce(current,options),0) / v.length;
 		}
 		FUNCTIONS.counta = function() {
 			let v, options;
@@ -283,24 +280,6 @@
 			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:replaceForA()}));
 			return v.reduce((accumulator,current) => Math.min(accumulator,current));
 		}
-		FUNCTIONS.producta = function()  {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			if(options && options.if) v = v.filter(options.if);
-			if(v.length===0) return 0;
-			options = Object.assign({
-				boolean: {
-					true: 1,
-					false: 0
-				},
-				string: 1,
-				undefined: 1,
-				null: 1,
-				Array: 1
-			},(options || {}));
-			traverse(v,(item,i,array) => array[i] = coerce(item,{replace:options}));
-			return FUNCTIONS.product(...v);
-		}
 		FUNCTIONS.quotienta = function()  {
 			let v, options;
 			[v,options] = getargs([].slice.call(arguments,0));
@@ -326,13 +305,6 @@
 			options = Object.assign({replace:replaceForA()},(options || {}));
 			if(options && options.if) v = v.filter(options.if);
 			return v.reduce((accumulator,current) => accumulator - coerce(current,options),0);
-		}
-		FUNCTIONS.suma = function() {
-			let v, options;
-			[v,options] = getargs([].slice.call(arguments,0));
-			options = Object.assign({replace:replaceForA()},(options || {}));
-			if(options && options.if) v = v.filter(options.if);
-			return v.reduce((accumulator,current) => accumulator + coerce(current,options),0);
 		}
 		
 		FUNCTIONS.zscores = function() {
@@ -362,6 +334,7 @@
 				if(!cell) return new Cell(coordinates,value,options);
 				if(arguments.length===1) return cell;
 				cell.value = value;
+				cell.options || (cell.options={});
 				!options || Object.assign(cell.options,options);
 				return cell;
 			}
@@ -402,8 +375,12 @@
 			delete this.compiled;
 			this.index();
 			if(typeof(this.data)==="string" && this.data.indexOf("=")===0) {
+				let formula = this.data.substring(1);
+				formula = formula.replace(/\$\((.*?)\)/g,"range('$1')");
+				formula = formula.replace(/\$summary\((.*?)\)/g,"summary('$1')");
+				formula = formula.replace(/\$a\((.*?)\)/g,"values('$1')");
 				//Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { " + DECLARATIONS + "return " + this.data.substring(1) + "; }")(FUNCTIONS)});
-				Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { with(functions) { return " + this.data.substring(1) + "; }}")(FUNCTIONS)});
+				Object.defineProperty(this,"compiled",{enumerable:false,configurable:true,writable:true,value:new Function("functions","return function() { with(functions) { return " + formula + "; }}")(FUNCTIONS)});
 			}
 			for(let pattern in Cell.observers) {
 				const observers = [];
@@ -598,7 +575,7 @@
 			}
 		}
 		me.spaces = {};
-		me.Sheet = class Sheet extends this.Space {
+		me.Sheet = class Sheet extends me.Space {
 			constructor(name,options={sparse:me.options.sparse}) {
 				super(name,options);
 				let sheet = me.sheets[name];
