@@ -1,6 +1,6 @@
 {
   "name": "hypercalc",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "A multi-dimensional, headless JavaScript spreadsheet for the browser or Node.js.",
   "engines": {},
   "license": "AGPLv3",
@@ -25,6 +25,6 @@
     "console-time": "^1.0.9"
   },
   "dependencies": {
-    "mathjs": "^3.12.2"
+    
   }
 }

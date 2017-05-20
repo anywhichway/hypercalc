@@ -280,6 +280,8 @@ So long as your function can accept arrays as arguments, it can consume the resu
 
 # Release History (reverse chronological order)
 
+2017-05-20 v0.0.11 ALPHA math.js reference was still in package.json. Removed it.
+
 2017-05-19 v0.0.10 ALPHA Removed the use of quotes inside range specifier, i.e. `$(range string)`, so that it is easier to type ranges into spreasheet formulas. The function `range('range string')` is equivalent, except it takes quotes. The same applies to `$summary` and `summary`. Added over 75 unit tests.
 
 2017-05-17 v0.0.9 ALPHA Lost some of the re-architected project structure as code was re-worked to support Unit based calculations. Added `interval` function. Refined Vector and Matrix.
